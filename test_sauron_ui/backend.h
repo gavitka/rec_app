@@ -10,9 +10,10 @@ extern "C" {
 #include "libavutil/imgutils.h"
 }
 
-static void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
-    FILE *outfile);
-extern "C" void startRecordC();
+class QDataStream;
+
+static void encode2(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
+    QDataStream &out);
 
 class BackEnd : public QObject
 {
