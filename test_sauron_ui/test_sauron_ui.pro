@@ -13,6 +13,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+        backend.cpp \
         main.cpp
 
 RESOURCES += qml.qrc
@@ -29,6 +30,29 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+    backend.h \
     pch.h
 
+LIBS += "C:\dev\rec_app\libav\libavcodec\libavcodec.a"
+LIBS += "C:\dev\rec_app\libav\libavutil\libavutil.a"
+LIBS += "C:\dev\rec_app\libav\libavformat\libavformat.a"
+LIBS += "C:\dev\rec_app\libav\libavresample\libavresample.a"
+LIBS += bcrypt.lib
+LIBS += gdi32.lib
+LIBS += kernel32.lib
+LIBS += user32.lib
+LIBS += winspool.lib
+LIBS += comdlg32.lib
+LIBS += advapi32.lib
+LIBS += shell32.lib
+LIBS += ole32.lib
+LIBS += oleaut32.lib
+LIBS += uuid.lib
+LIBS += odbc32.lib
+LIBS += odbccp32.lib
+
+INCLUDEPATH += ../libav/
+
 PRECOMPILED_HEADER = pch.h
+
+QMAKE_LFLAGS += /NODEFAULTLIB:library

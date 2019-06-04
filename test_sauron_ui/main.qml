@@ -2,6 +2,7 @@ import QtQuick 2.12
 import QtQuick.Window 2.12
 import QtQuick.Layouts 1.12
 import QtQuick.Controls 2.12
+import io.qt.examples.backend 1.0
 
 Window {
     visible: true
@@ -10,20 +11,27 @@ Window {
     title: qsTr("Hello World")
     id: wnd
 
+    BackEnd {
+        id:backend
+    }
+
     ColumnLayout{
         id: grid
         anchors.fill: parent
-
-        RowLayout{
+        GroupBox{
+            title: "Recording"
             Layout.fillWidth: true
-
-            Button{
-                text: "Start"
+            RowLayout{
+                anchors.fill: parent
+                Button{
+                    text: "Start"
+                    onClicked: backend.startRecording()
                 }
-
-            Button{
-                text: "Stop"
+                Button{
+                    text: "Stop"
+                    onClicked: backend.stopRecording()
                 }
+            }
         }
 
         Flickable{
@@ -35,11 +43,12 @@ Window {
 
             contentHeight: textArea.implicitHeight
 
+
             TextArea {
                 id:textArea
                 selectByMouse: true
-                text: "TextArea\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n
-                        ...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n...\n"
+                text: backend.outputText
+                onTextChanged: backend.outputText = text
             }
 
             ScrollBar.vertical: ScrollBar { }
