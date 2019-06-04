@@ -1,0 +1,10 @@
+/x64
+/Debug
+/ipch
+/MouseHook/Debug
+/MouseHook/x64
+/MouseHook.VC.db
+/.vs
+
+#build_dirs
+build-*
