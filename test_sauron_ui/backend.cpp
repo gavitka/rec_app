@@ -95,10 +95,10 @@ void BackEnd::startRecording()
         return;
 
     /* put sample parameters */
-    c->bit_rate = 400000;
+    c->bit_rate = 8000000;
     /* resolution must be a multiple of two */
-    c->width = 352;
-    c->height = 288;
+    c->width = 800;
+    c->height = 600;
 
     AVRational r1 = {1, 25};
     AVRational r2 = {25, 1};
@@ -112,7 +112,7 @@ void BackEnd::startRecording()
     //AV_PIX_FMT_YUV420P
 
     if (codec->id == AV_CODEC_ID_H264)
-        av_opt_set(c->priv_data, "preset", "slow", 0);
+        av_opt_set(c->priv_data, "preset", "fast", 0);
 
     /* open it */
     ret = avcodec_open2(c, codec, nullptr);
@@ -131,6 +131,7 @@ void BackEnd::startRecording()
         fprintf(stderr, "Could not allocate video frame\n");
         exit(1);
     }
+    //frame->format = AV_PIX_FMT_RGB24;
     frame->format = c->pix_fmt;
     frame->width  = c->width;
     frame->height = c->height;
@@ -151,10 +152,10 @@ void BackEnd::startRecording()
     QPixmap pixmap = screen->grabWindow(0);
     QImage image (pixmap.toImage());
 
-    for (i = 0; i < 125; i++) {
+    for (i = 0; i < 1500; i++) {
         fflush(stdout);
 
-        /* make sure the frame data is writable */
+//        /* make sure the frame data is writable */
 
         QThread::msleep(100);
 
@@ -175,9 +176,9 @@ void BackEnd::startRecording()
                 int imageindex = imagey * imagescanline + imagex;
                 uchar singlepixeldata = *(image.bits() + imageindex * 3);
                 Q_UNUSED(singlepixeldata);
-                frame->data[0][y * frame->linesize[0] + x * 3 + 0] = *(image.bits() + imageindex * 3 + 0);
-                frame->data[0][y * frame->linesize[0] + x * 3 + 1] = *(image.bits() + imageindex * 3 + 1);
-                frame->data[0][y * frame->linesize[0] + x * 3 + 2] = *(image.bits() + imageindex * 3 + 2);
+                frame->data[0][y * frame->linesize[0] + x * 3 + 0] = *(image.bits() + imageindex * 4 + 0);
+                frame->data[0][y * frame->linesize[0] + x * 3 + 1] = *(image.bits() + imageindex * 4 + 1);
+                frame->data[0][y * frame->linesize[0] + x * 3 + 2] = *(image.bits() + imageindex * 4 + 2);
             }
         }
 
@@ -185,7 +186,9 @@ void BackEnd::startRecording()
 //        /* Y */
 //        for (y = 0; y < c->height; y++) {
 //            for (x = 0; x < c->width; x++) {
-//                frame->data[0][y * frame->linesize[0] + x] = x + y + i * 3;
+//                frame->data[0][y * frame->linesize[0] + x + 0] = x + y + i * 3;
+//                //frame->data[0][y * frame->linesize[0] + x * 3 + 1] = 128 + y + i * 2;
+//                //frame->data[0][y * frame->linesize[0] + x * 3 + 2] = 64 + x + i * 5;
 //            }
 //        }
 
@@ -207,7 +210,7 @@ void BackEnd::startRecording()
     encode2(c, nullptr, pkt, out);
 
     /* add sequence end code to have a real MPEG file */
-    out << endcode;
+    //out << endcode;
 
     file.close();
 
