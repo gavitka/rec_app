@@ -34,10 +34,11 @@ HEADERS += \
     backend.h \
     pch.h
 
-LIBS += "C:\dev\rec_app\libav\libavcodec\libavcodec.a"
-LIBS += "C:\dev\rec_app\libav\libavutil\libavutil.a"
-LIBS += "C:\dev\rec_app\libav\libavformat\libavformat.a"
-LIBS += "C:\dev\rec_app\libav\libavresample\libavresample.a"
+LIBS += "C:\dev\ffmpeg\libavcodec\libavcodec.a"
+LIBS += "C:\dev\ffmpeg\libavutil\libavutil.a"
+LIBS += "C:\dev\ffmpeg\libavformat\libavformat.a"
+LIBS += "C:\dev\ffmpeg\libswresample\libswresample.a"
+LIBS += "C:\dev\libav\x264\installed\lib\libx264.lib"
 LIBS += bcrypt.lib
 LIBS += gdi32.lib
 LIBS += kernel32.lib
@@ -52,7 +53,7 @@ LIBS += uuid.lib
 LIBS += odbc32.lib
 LIBS += odbccp32.lib
 
-INCLUDEPATH += ../libav/
+INCLUDEPATH += ../../ffmpeg/
 
 PRECOMPILED_HEADER = pch.h
 

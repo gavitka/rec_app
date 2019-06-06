@@ -17,6 +17,8 @@
 #include <QPixmap>
 #include <QQmlApplicationEngine>
 
+#include <QThread>
+
 extern QWindow* windowRef;
 
 
@@ -54,26 +56,40 @@ void BackEnd::startRecording()
 
     const AVCodec *codec;
     AVCodecContext *c = nullptr;
-    AVFrame *picture;
+    AVFrame *frame;
     AVPacket *pkt;
+
     int i, ret, x, y;
 
     static const char endcodedata[] = {'\x00','\x00','\x01','\xb7'};
     QByteArray endcode =  QByteArray::fromRawData(endcodedata, sizeof(endcodedata));
 
-    avcodec_register_all();
-
     /* find the mpeg1video encoder */
-    codec = avcodec_find_encoder(AV_CODEC_ID_MPEG1VIDEO);
+
+    AVCodec* p = nullptr;
+    while (p) {
+        fprintf(stderr, "Codec: %s\n", p->name);
+        p = p->next;
+    }
+
+    codec = avcodec_find_encoder_by_name("libx264rgb");
+    //libx264
+    //libx264rgb
+    //AV_CODEC_ID_H264
+    //AV_CODEC_ID_MPEG1VIDEO
 
     if (!codec) {
-        fprintf(stderr, "codec not found\n");
+        fprintf(stderr, "Codec not found\n");
         return;
     }
 
     //memory allocation
     c = avcodec_alloc_context3(codec);
-    picture = av_frame_alloc();
+    if(!c) {
+        fprintf(stderr, "Could not allocate video codec context\n");
+        return;
+    }
+
     pkt = av_packet_alloc();
     if (!pkt)
         return;
@@ -91,10 +107,17 @@ void BackEnd::startRecording()
 
     c->gop_size = 10; /* emit one intra frame every ten frames */
     c->max_b_frames = 1;
-    c->pix_fmt = AV_PIX_FMT_YUV420P;
+    c->pix_fmt = AV_PIX_FMT_RGB24 ;
+    //AV_PIX_FMT_RGB24
+    //AV_PIX_FMT_YUV420P
 
-    if (avcodec_open2(c, codec, nullptr) < 0) {
-        fprintf(stderr, "could not open codec\n");
+    if (codec->id == AV_CODEC_ID_H264)
+        av_opt_set(c->priv_data, "preset", "slow", 0);
+
+    /* open it */
+    ret = avcodec_open2(c, codec, nullptr);
+    if (ret < 0) {
+        fprintf(stderr, "Could not open codec\n");
         return;
     }
 
@@ -103,11 +126,16 @@ void BackEnd::startRecording()
 
     QDataStream out(&file);
 
-    picture->format = c->pix_fmt;
-    picture->width = c->width;
-    picture->height = c->height;
+    frame = av_frame_alloc();
+    if (!frame) {
+        fprintf(stderr, "Could not allocate video frame\n");
+        exit(1);
+    }
+    frame->format = c->pix_fmt;
+    frame->width  = c->width;
+    frame->height = c->height;
 
-    ret = av_frame_get_buffer(picture, 32);
+    ret = av_frame_get_buffer(frame, 32);
     if (ret < 0) {
         fprintf(stderr, "could not alloc the frame data\n");
         return;
@@ -128,48 +156,51 @@ void BackEnd::startRecording()
 
         /* make sure the frame data is writable */
 
+        QThread::msleep(100);
+
         QPixmap pixmap = screen->grabWindow(0);
         QImage image (pixmap.toImage());
 
-        ret = av_frame_make_writable(picture);
+        ret = av_frame_make_writable(frame);
         if (ret < 0)
             return;
 
         /* prepare a dummy image */
-        /* Y */
+        /* RGB */
         for (y = 0; y < c->height; y++) {
             for (x = 0; x < c->width; x++) {
-//                picture->data[0][y * picture->linesize[0] + x] = x + y + i * 3;
-
                 int imagey = (int)(image.height() * ((double)y/c->height));
                 int imagex = (int)(image.width() * ((double)x/c->width));
                 int imagescanline = image.width();
                 int imageindex = imagey * imagescanline + imagex;
                 uchar singlepixeldata = *(image.bits() + imageindex * 3);
                 Q_UNUSED(singlepixeldata);
-                picture->data[0][y * picture->linesize[0] + x] = *(image.bits() + imageindex * 3);
+                frame->data[0][y * frame->linesize[0] + x * 3 + 0] = *(image.bits() + imageindex * 3 + 0);
+                frame->data[0][y * frame->linesize[0] + x * 3 + 1] = *(image.bits() + imageindex * 3 + 1);
+                frame->data[0][y * frame->linesize[0] + x * 3 + 2] = *(image.bits() + imageindex * 3 + 2);
             }
         }
 
-        /* Cb and Cr */
-        for (y = 0; y < c->height / 2; y++) {
-            for (x = 0; x < c->width / 2; x++) {
-//                picture->data[1][y * picture->linesize[1] + x] = 128 + y + i * 2;
-//                picture->data[2][y * picture->linesize[2] + x] = 64 + x + i * 5;
+//        /* prepare a dummy image */
+//        /* Y */
+//        for (y = 0; y < c->height; y++) {
+//            for (x = 0; x < c->width; x++) {
+//                frame->data[0][y * frame->linesize[0] + x] = x + y + i * 3;
+//            }
+//        }
 
-                int imagey = (int)(image.height() * ((double)y/c->height));
-                int imagex = (int)(image.width() * ((double)x/c->width));
-                int imagescanline = image.width();
-                int imageindex = imagey * imagescanline + imagex;
-                picture->data[1][y * picture->linesize[1] + x] = *(image.bits() + imageindex * 3 + 1);
-                picture->data[2][y * picture->linesize[2] + x] = *(image.bits() + imageindex * 3 + 2);
-            }
-        }
+//        /* Cb and Cr */
+//        for (y = 0; y < c->height/2; y++) {
+//            for (x = 0; x < c->width/2; x++) {
+//                frame->data[1][y * frame->linesize[1] + x] = 128 + y + i * 2;
+//                frame->data[2][y * frame->linesize[2] + x] = 64 + x + i * 5;
+//            }
+//        }
 
-        picture->pts = i;
+        frame->pts = i;
 
         /* encode the image */
-        encode2(c, picture, pkt, out);
+        encode2(c, frame, pkt, out);
     }
 
     /* flush the encoder */
@@ -181,7 +212,7 @@ void BackEnd::startRecording()
     file.close();
 
     avcodec_free_context(&c);
-    av_frame_free(&picture);
+    av_frame_free(&frame);
     av_packet_free(&pkt);
 
     addOutPutText("Recording Finished\n");
@@ -199,10 +230,13 @@ static void encode2(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
    int ret;
 
    /* send the frame to the encoder */
+//   if (frame)
+//      printf("Send frame %3"PRId64"\n", frame->pts);
+
    ret = avcodec_send_frame(enc_ctx, frame);
    if (ret < 0) {
-       fprintf(stderr, "error sending a frame for encoding\n");
-       exit(1);
+       fprintf(stderr, "Error sending a frame for encoding\n");
+       return;
    }
 
    while (ret >= 0) {
@@ -210,10 +244,11 @@ static void encode2(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
            return;
        else if (ret < 0) {
-           fprintf(stderr, "error during encoding\n");
+           fprintf(stderr, "Error during encoding\n");
            return;
        }
 
+//       printf("Write packet %3"PRId64" (size=%5d)\n", pkt->pts, pkt->size);
        out.writeRawData(reinterpret_cast<const char*>(pkt->data), pkt->size);
        av_packet_unref(pkt);
    }
