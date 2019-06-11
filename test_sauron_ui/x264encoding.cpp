@@ -27,15 +27,15 @@ void encoder_init() {
     x264_param_default_preset(&param, "veryfast", "zerolatency");
 
     param.i_threads                = 1;
-    param.rc.i_bitrate             = 20000;
+    param.rc.i_bitrate             = 10000;
 
     param.i_log_level              = X264_LOG_WARNING;
     //param.rc.i_rc_method           = X264_RC_ABR;
 
     param.i_csp                    = X264_CSP_I420;
 
-    param.i_width                  = 388;
-    param.i_height                 = 262;
+    param.i_width                  = 352;
+    param.i_height                 = 288;
 
     param.i_fps_num                = 30;
     param.i_fps_den                = 1;
@@ -48,7 +48,7 @@ void encoder_init() {
 
     x264_param_apply_profile(&param, "baseline");
 
-    QFile file("bullshit.mp4");
+    QFile file("C:/dev/rec_app/bullshit.mp4");
 
     context = x264_encoder_open(&param);
     if(context == nullptr) {
@@ -88,13 +88,10 @@ void encoder_init() {
 
 void encode_frame(x264_t *context, x264_param_t &param, QDataStream &out) {
 
-    //struct obs_x264 *obsx264 = data;
     x264_nal_t      *nals;
     int             nal_count;
     int             ret;
-    x264_picture_t  pic, pic_out, pic_fullsize;
-
-
+    x264_picture_t  pic, pic_out;
 
     int             width, height;
 
@@ -111,27 +108,11 @@ void encode_frame(x264_t *context, x264_param_t &param, QDataStream &out) {
     QImage image (pixmap.toImage());
 
     x264_picture_alloc(&pic, X264_CSP_I420, width, height);
-    x264_picture_alloc(&pic_fullsize, X264_CSP_RGB, image.width(), image.height());
 
     struct SwsContext* convertCtx = sws_getContext(image.width(), image.height(),
                                                    AV_PIX_FMT_RGBA, width, height,
                                                    AV_PIX_FMT_YUV420P, SWS_FAST_BILINEAR,
                                                    nullptr, nullptr, nullptr);
-    //int srcstride = image.width()*3; //RGB stride is just 3*width
-
-//    for(int y = 0; y < image.height(); ++y)
-//    for(int x = 0; x < image.width(); ++x)
-//        {
-////        int imagey = (int)(image.height() * ((double)y/height));
-////        int imagex = (int)(image.width() * ((double)x/width));
-////        int imagescanline = image.width();
-////        int imageindex = imagey * imagescanline + imagex;
-////        uchar singlepixeldata = *(image.bits() + imageindex * 3);
-////        Q_UNUSED(singlepixeldata);
-//        pic_fullsize.img.plane[0][y * image.width() + x * 3 + 0] = *(image.bits() + imageindex * 4 + 0);
-//        pic_fullsize.img.plane[0][y * image.width() + x * 3 + 1] = *(image.bits() + imageindex * 4 + 1);
-//        pic_fullsize.img.plane[0][y * image.width() + x * 3 + 2] = *(image.bits() + imageindex * 4 + 2);
-//        }
 
     int srcstride[1];
     srcstride[0] = image.width()*4;
@@ -140,27 +121,12 @@ void encode_frame(x264_t *context, x264_param_t &param, QDataStream &out) {
     sws_scale(convertCtx, planes,
               srcstride, 0, image.height(), pic.img.plane, pic.img.i_stride);
 
-//    for(int y = 0; y < height; ++y)
-//    for(int x = 0; x < width; ++x)
-//        {
-//        int imagey = (int)(image.height() * ((double)y/height));
-//        int imagex = (int)(image.width() * ((double)x/width));
-//        int imagescanline = image.width();
-//        int imageindex = imagey * imagescanline + imagex;
-//        uchar singlepixeldata = *(image.bits() + imageindex * 3);
-//        Q_UNUSED(singlepixeldata);
-//        pic.img.plane[0][y * pic.img.i_stride[0] + x * 3 + 0] = *(image.bits() + imageindex * 4 + 0);
-//        pic.img.plane[0][y * pic.img.i_stride[0] + x * 3 + 1] = *(image.bits() + imageindex * 4 + 1);
-//        pic.img.plane[0][y * pic.img.i_stride[0] + x * 3 + 2] = *(image.bits() + imageindex * 4 + 2);
-//        }
-
     ret = x264_encoder_encode(context, &nals, &nal_count, &pic, &pic_out);
     if (ret < 0) {
         fprintf(stderr, "encode failed\n");
         return;
     }
 
-    //out.writeRawData(reinterpret_cast<const char*>(&nals->i_payload), 4);
     for (int i = 0;  i < nal_count ; ++i)
     {
         out.writeRawData(reinterpret_cast<const char*>(nals[i].p_payload), nals[i].i_payload);

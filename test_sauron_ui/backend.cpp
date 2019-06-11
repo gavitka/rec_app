@@ -20,6 +20,7 @@
 #include <QThread>
 
 #include "x264encoding.h"
+#include "ffmpeg_encoder.h"
 
 extern QWindow* windowRef;
 
@@ -50,9 +51,9 @@ void BackEnd::addOutPutText(QString text)
 void BackEnd::startRecording() {
     addOutPutText("Recording Started\n");
 
-    encoder_init();
+    ffmpeg_encoder encoder;
+    encoder.encode();
 
-    //start_recording_ffmpeg();
     addOutPutText("Recording Finished\n");
 }
 
@@ -197,24 +198,6 @@ void start_recording_ffmpeg() {
             }
         }
 
-//        /* prepare a dummy image */
-//        /* Y */
-//        for (y = 0; y < c->height; y++) {
-//            for (x = 0; x < c->width; x++) {
-//                frame->data[0][y * frame->linesize[0] + x + 0] = x + y + i * 3;
-//                //frame->data[0][y * frame->linesize[0] + x * 3 + 1] = 128 + y + i * 2;
-//                //frame->data[0][y * frame->linesize[0] + x * 3 + 2] = 64 + x + i * 5;
-//            }
-//        }
-
-//        /* Cb and Cr */
-//        for (y = 0; y < c->height/2; y++) {
-//            for (x = 0; x < c->width/2; x++) {
-//                frame->data[1][y * frame->linesize[1] + x] = 128 + y + i * 2;
-//                frame->data[2][y * frame->linesize[2] + x] = 64 + x + i * 5;
-//            }
-//        }
-
         frame->pts = i;
 
         /* encode the image */
@@ -264,23 +247,3 @@ static void encode2(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
        av_packet_unref(pkt);
    }
 }
-
-
-
-
-
-//        /* prepare a dummy image */
-//        /* Y */
-//        for (y = 0; y < c->height; y++) {
-//            for (x = 0; x < c->width; x++) {
-//                picture->data[0][y * picture->linesize[0] + x] = x + y + i * 3;
-//            }
-//        }
-
-//        /* Cb and Cr */
-//        for (y = 0; y < c->height / 2; y++) {
-//            for (x = 0; x < c->width / 2; x++) {
-//                picture->data[1][y * picture->linesize[1] + x] = 128 + y + i * 2;
-//                picture->data[2][y * picture->linesize[2] + x] = 64 + x + i * 5;
-//            }
-//        }

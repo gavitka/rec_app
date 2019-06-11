@@ -10,3 +10,7 @@
 build-*
 
 libav/
+
+*.h264
+*.avi
+*.mp4
