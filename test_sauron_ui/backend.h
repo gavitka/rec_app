@@ -15,6 +15,8 @@ class QDataStream;
 static void encode2(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
     QDataStream &out);
 
+void start_recording_ffmpeg();
+
 class BackEnd : public QObject
 {
     Q_OBJECT

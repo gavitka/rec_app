@@ -15,7 +15,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         backend.cpp \
-        main.cpp
+        main.cpp \
+        x264encoding.cpp
 
 RESOURCES += qml.qrc
 
@@ -32,12 +33,14 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     backend.h \
-    pch.h
+    pch.h \
+    x264encoding.h
 
 LIBS += "C:\dev\ffmpeg\libavcodec\libavcodec.a"
 LIBS += "C:\dev\ffmpeg\libavutil\libavutil.a"
 LIBS += "C:\dev\ffmpeg\libavformat\libavformat.a"
 LIBS += "C:\dev\ffmpeg\libswresample\libswresample.a"
+LIBS += "C:\dev\ffmpeg\libswscale\libswscale.a"
 LIBS += "C:\dev\libav\x264\installed\lib\libx264.lib"
 LIBS += bcrypt.lib
 LIBS += gdi32.lib
@@ -54,6 +57,7 @@ LIBS += odbc32.lib
 LIBS += odbccp32.lib
 
 INCLUDEPATH += ../../ffmpeg/
+INCLUDEPATH += C:\dev\lib\x264
 
 PRECOMPILED_HEADER = pch.h
 

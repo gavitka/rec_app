@@ -19,6 +19,8 @@
 
 #include <QThread>
 
+#include "x264encoding.h"
+
 extern QWindow* windowRef;
 
 
@@ -45,11 +47,22 @@ void BackEnd::addOutPutText(QString text)
     setOutputText(outputText() + text);
 }
 
-void BackEnd::startRecording()
-{
+void BackEnd::startRecording() {
     addOutPutText("Recording Started\n");
 
-    QFile file("bullshit.avi");
+    encoder_init();
+
+    //start_recording_ffmpeg();
+    addOutPutText("Recording Finished\n");
+}
+
+void BackEnd::stopRecording() {
+    addOutPutText("Recording Stopped\n");
+}
+
+void start_recording_ffmpeg() {
+
+    QFile file("bullshit.mp4");
     QTextStream cout(stderr);
 
     //declarations
@@ -95,10 +108,10 @@ void BackEnd::startRecording()
         return;
 
     /* put sample parameters */
-    c->bit_rate = 8000000;
+    c->bit_rate = 2000000;
     /* resolution must be a multiple of two */
-    c->width = 800;
-    c->height = 600;
+    c->width = 388;
+    c->height = 268;
 
     AVRational r1 = {1, 25};
     AVRational r2 = {25, 1};
@@ -112,7 +125,9 @@ void BackEnd::startRecording()
     //AV_PIX_FMT_YUV420P
 
     if (codec->id == AV_CODEC_ID_H264)
+    {
         av_opt_set(c->priv_data, "preset", "fast", 0);
+    }
 
     /* open it */
     ret = avcodec_open2(c, codec, nullptr);
@@ -152,7 +167,7 @@ void BackEnd::startRecording()
     QPixmap pixmap = screen->grabWindow(0);
     QImage image (pixmap.toImage());
 
-    for (i = 0; i < 1500; i++) {
+    for (i = 0; i < 100; i++) {
         fflush(stdout);
 
 //        /* make sure the frame data is writable */
@@ -210,6 +225,7 @@ void BackEnd::startRecording()
     encode2(c, nullptr, pkt, out);
 
     /* add sequence end code to have a real MPEG file */
+    // ffs?
     //out << endcode;
 
     file.close();
@@ -217,14 +233,6 @@ void BackEnd::startRecording()
     avcodec_free_context(&c);
     av_frame_free(&frame);
     av_packet_free(&pkt);
-
-    addOutPutText("Recording Finished\n");
-}
-
-void BackEnd::stopRecording()
-{
-    addOutPutText("Recording Stopped\n");
-
 }
 
 static void encode2(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
