@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QQmlEngine>
 #include <thread>
 
 #include"capturethread.h"
@@ -13,17 +14,24 @@ class BackEnd : public QObject
     Q_PROPERTY(QString startButtonText READ startButtonText NOTIFY startButtonTextChanged)
 
 public:
-    explicit BackEnd(QObject *parent = nullptr) :
+
+    static QObject *qmlInstance(QQmlEngine *engine, QJSEngine *scriptEngine)
+    {
+        Q_UNUSED(engine);
+        Q_UNUSED(scriptEngine);
+
+        if(!m_instance) {
+            m_instance = new BackEnd();
+        }
+        return m_instance;
+    }
+
+    BackEnd(QObject *parent = nullptr) :
         QObject(parent),
         m_thr(nullptr)
     {
         refreshUI();
     }
-
-//    static BackEnd& getInstance() {
-//        static BackEnd instance;
-//        return instance;
-//    }
 
     QString outputText() {return m_output_text;}
     void setOutputText(QString s);
@@ -33,6 +41,7 @@ public:
     QString startButtonText();
     
 signals:
+
     void outputTextChanged();
     void stopEnabledChanged();
     void startButtonTextChanged();
@@ -45,10 +54,13 @@ public slots:
     void refreshUI();
 
 private:
+
+    static QObject* m_instance;
     QString m_output_text;
     CaptureThread* m_thr;
 
     void addOutPutText(QString text) {
         setOutputText(outputText() + text);
     }
+
 };

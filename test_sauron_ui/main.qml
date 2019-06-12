@@ -11,9 +11,9 @@ Window {
     title: qsTr("Hello World")
     id: wnd
 
-    BackEnd {
-        id:backend
-    }
+//    BackEnd {
+//        id:backend
+//    }
 
     ColumnLayout{
         id: grid
@@ -24,13 +24,13 @@ Window {
             RowLayout{
                 anchors.fill: parent
                 Button{
-                    text: backend.startButtonText
-                    onClicked: backend.startRecording()
+                    text: BackEnd.startButtonText
+                    onClicked: BackEnd.startRecording()
                 }
                 Button{
                     text: "Stop"
-                    enabled: backend.stopEnabled
-                    onClicked: backend.stopRecording()
+                    enabled: BackEnd.stopEnabled
+                    onClicked: BackEnd.stopRecording()
                 }
             }
         }
@@ -48,8 +48,8 @@ Window {
             TextArea {
                 id:textArea
                 selectByMouse: true
-                text: backend.outputText
-                onTextChanged: backend.outputText = text
+                text: BackEnd.outputText
+                onTextChanged: BackEnd.outputText = text
             }
 
             ScrollBar.vertical: ScrollBar { }

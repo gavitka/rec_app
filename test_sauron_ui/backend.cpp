@@ -21,6 +21,8 @@
 
 #include <QThread>
 
+QObject* BackEnd::m_instance = nullptr;
+
 void BackEnd::setOutputText(QString s) {
     if (s== m_output_text) return;
 
