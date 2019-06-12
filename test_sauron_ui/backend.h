@@ -20,6 +20,11 @@ public:
         refreshUI();
     }
 
+//    static BackEnd& getInstance() {
+//        static BackEnd instance;
+//        return instance;
+//    }
+
     QString outputText() {return m_output_text;}
     void setOutputText(QString s);
 

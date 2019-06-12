@@ -21,9 +21,6 @@
 
 #include <QThread>
 
-//#include "x264encoding.h"
-//#include "ffmpeg_encoder.h"
-
 void BackEnd::setOutputText(QString s) {
     if (s== m_output_text) return;
 
@@ -61,14 +58,14 @@ QString BackEnd::startButtonText() {
 void BackEnd::startRecording() {
     if(m_thr == nullptr || !m_thr->isRunning()) {
         //start
-        m_thr = new CaptureThread();
+        m_thr = new CaptureThread(4); // specify the capture frame rate
         connect(m_thr, &CaptureThread::resultReady, this, &BackEnd::handleResults);
         m_thr->start();
         addOutPutText("Recording Started\n");
     }
     else {
         //pause
-        m_thr->pause();
+        m_thr->togglepause();
         addOutPutText("Recording paused\n");
     }
     refreshUI();

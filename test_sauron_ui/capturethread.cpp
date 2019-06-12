@@ -6,15 +6,16 @@
 
 extern QWindow* windowRef;
 
-CaptureThread::CaptureThread():
+CaptureThread::CaptureThread(int shots_per_second):
     m_stop (false),
-    m_pause (false)
+    m_pause (false),
+    m_shots_per_second (shots_per_second)
 {
     screen = QGuiApplication::primaryScreen();
     if (windowRef)
         screen = windowRef->screen();
 
-    shots_per_second = 12;
+    m_shots_per_second = 12;
 }
 
 void CaptureThread::run() {
@@ -32,7 +33,7 @@ void CaptureThread::run() {
             break;
         }
 
-        QThread::msleep((int)1000/shots_per_second);
+        QThread::msleep((int)1000/m_shots_per_second);
     }
     vc.Finish();
     emit CaptureThread::resultReady();

@@ -6,17 +6,17 @@
 
 class CaptureThread : public QThread
 {
-
     Q_OBJECT
 
 public:
-    CaptureThread();
+    CaptureThread(int shots_per_second);
     void run();
     void Stop() {
+        if(isPaused()) togglepause();
         this->m_stop = true;
     }
 
-    void pause() {
+    void togglepause() {
         this->m_pause = this->m_pause ? false : true;
     }
 
@@ -24,13 +24,12 @@ public:
         return m_pause;
     }
 
-    int shots_per_second;
-
 private:
     QImage CaptureScreen();
     bool m_stop;
     bool m_pause;
     QScreen* screen;
+    int m_shots_per_second;
     //QMutex mux;
 
 signals:
