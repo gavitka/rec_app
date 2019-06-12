@@ -2,32 +2,18 @@
 
 #include <QObject>
 
-extern "C" {
-
-#include <libavcodec/avcodec.h>
-
-#include <libavutil/opt.h>
-#include <libavutil/imgutils.h>
-}
-
-class QDataStream;
-
-static void encode2(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
-   QDataStream &out);
-
-void start_recording_ffmpeg();
-
 class BackEnd : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString outputText READ outputText WRITE setOutputText NOTIFY outputTextChanged)
 
 public:
-    explicit BackEnd(QObject *parent = nullptr);
+    explicit BackEnd(QObject *parent = nullptr) : QObject(parent) {
 
-    QString outputText();
-    void setOutputText(QString);
+    }
 
+    QString outputText() {return m_output_text;}
+    void setOutputText(QString s);
     
 signals:
     void outputTextChanged();
@@ -39,5 +25,8 @@ public slots:
 
 private:
     QString m_output_text;
-    void addOutPutText(QString text);
+
+    void addOutPutText(QString text) {
+        setOutputText(outputText() + text);
+    }
 };

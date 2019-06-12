@@ -4,82 +4,57 @@
 #include <QThread>
 #include <QWindow>
 
-#define VIDEO_TMP_FILE "tmp.h264"
-#define FINAL_FILE_NAME "record.mp4"
-
 extern QWindow* windowRef;
 
 ffmpeg_encoder::ffmpeg_encoder():
     file{"C:/dev/rec_app/bullshit.mp4"},
     codec (nullptr),
-    cctx (nullptr),
+    c (nullptr),
     screen(QGuiApplication::primaryScreen())
 {
     int ret;
-    int fps = 25;
-    int bitrate = 1000;
-
-    width = 388;
-    height = 268;
-    cctx->width = width;
-    cctx->height = height;
 
     static const char endcodedata[] = {'\x00','\x00','\x01','\xb7'};
     endcode =  QByteArray::fromRawData(endcodedata, sizeof(endcodedata));
 
-    if (!(oformat = av_guess_format(nullptr, VIDEO_TMP_FILE, nullptr))) {
-        fprintf(stderr, "Failed to define output format");
-        return;
-    }
-
-    if ((ret = avformat_alloc_output_context2(&ofctx, oformat, nullptr, VIDEO_TMP_FILE) < 0)) {
-        fprintf(stderr, "Failed to allocate output context");
-        return;
-    }
-
     codec = avcodec_find_encoder_by_name("libx264");
+
     if (!codec) {
         fprintf(stderr, "Codec not found\n");
         return;
     }
 
-    videoStream = avformat_new_stream(ofctx, codec);
-
-    cctx = avcodec_alloc_context3(codec);
-    if(!cctx) {
+    //memory allocation
+    c = avcodec_alloc_context3(codec);
+    if(!c) {
         fprintf(stderr, "Could not allocate video codec context\n");
         return;
     }
 
-    videoStream->codecpar->codec_id = oformat->video_codec;
-    videoStream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-    videoStream->codecpar->width = width;
-    videoStream->codecpar->height = height;
-    videoStream->codecpar->format = AV_PIX_FMT_YUV420P;
-    videoStream->codecpar->bit_rate = bitrate * 1000;
-    videoStream->time_base = { 1, fps };
-
-    avcodec_parameters_to_context(cctx, videoStream->codecpar);
-
     /* put sample parameters */
-//    cctx->bit_rate = 2000000;
+    c->bit_rate = 2000000;
+    /* resolution must be a multiple of two */
+    width = 388;
+    height = 268;
+    c->width = width;
+    c->height = height;
 
-//    AVRational r1 = {1, 25};
-//    AVRational r2 = {25, 1};
-//    cctx->time_base = r1;
-//    cctx->framerate = r2;
+    AVRational r1 = {1, 25};
+    AVRational r2 = {25, 1};
+    c->time_base = r1;
+    c->framerate = r2;
 
-    cctx->gop_size = 10; /* emit one intra frame every ten frames */
-    cctx->max_b_frames = 1;
-    cctx->pix_fmt = AV_PIX_FMT_YUV420P ;
+    c->gop_size = 10; /* emit one intra frame every ten frames */
+    c->max_b_frames = 1;
+    c->pix_fmt = AV_PIX_FMT_YUV420P ;
 
     if (codec->id == AV_CODEC_ID_H264)
     {
-        av_opt_set(cctx->priv_data, "preset", "fast", 0);
+        av_opt_set(c->priv_data, "preset", "fast", 0);
     }
 
     /* open it */
-    ret = avcodec_open2(cctx, codec, nullptr);
+    ret = avcodec_open2(c, codec, nullptr);
     if (ret < 0) {
         fprintf(stderr, "Could not open codec\n");
         return;
@@ -94,7 +69,7 @@ ffmpeg_encoder::ffmpeg_encoder():
 
 ffmpeg_encoder::~ffmpeg_encoder()
 {
-    avcodec_free_context(&cctx);
+    avcodec_free_context(&c);
 }
 
 void ffmpeg_encoder::encode()
@@ -118,9 +93,9 @@ void ffmpeg_encoder::encode()
         exit(1);
     }
     //frame->format = AV_PIX_FMT_RGB24;
-    frame->format = cctx->pix_fmt;
-    frame->width  = cctx->width;
-    frame->height = cctx->height;
+    frame->format = c->pix_fmt;
+    frame->width  = c->width;
+    frame->height = c->height;
 
     ret = av_frame_get_buffer(frame, 32);
     if (ret < 0) {
@@ -179,14 +154,14 @@ void ffmpeg_encoder::encode()
 void ffmpeg_encoder::encode2(AVFrame *frame, AVPacket *pkt, QDataStream &out) {
     int ret;
 
-    ret = avcodec_send_frame(cctx, frame);
+    ret = avcodec_send_frame(c, frame);
     if (ret < 0) {
         fprintf(stderr, "Error sending a frame for encoding\n");
         return;
     }
 
     while (ret >= 0) {
-        ret = avcodec_receive_packet(cctx, pkt);
+        ret = avcodec_receive_packet(c, pkt);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
             return;
         else if (ret < 0) {

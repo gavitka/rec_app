@@ -28,6 +28,12 @@ private:
     int width;
     int height;
 
+    AVOutputFormat *oformat;
+    AVFormatContext *ofctx;
+
+    AVStream *videoStream;
+    AVFrame *videoFrame;
+
     void encode2(AVFrame *frame, AVPacket *pkt, QDataStream &out);
 
 };

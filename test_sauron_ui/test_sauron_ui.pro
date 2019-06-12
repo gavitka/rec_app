@@ -14,6 +14,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+        VideoCapture.cpp \
         backend.cpp \
         ffmpeg_encoder.cpp \
         main.cpp \
@@ -33,17 +34,21 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+    VideoCapture.h \
     backend.h \
     ffmpeg_encoder.h \
     pch.h \
     x264encoding.h
 
-LIBS += "C:\dev\ffmpeg\libavcodec\libavcodec.a"
-LIBS += "C:\dev\ffmpeg\libavutil\libavutil.a"
-LIBS += "C:\dev\ffmpeg\libavformat\libavformat.a"
-LIBS += "C:\dev\ffmpeg\libswresample\libswresample.a"
-LIBS += "C:\dev\ffmpeg\libswscale\libswscale.a"
-LIBS += "C:\dev\libav\x264\installed\lib\libx264.lib"
+LIBS += "C:\dev\lib\ffmpeg_prefix\lib\libavcodec.a"
+LIBS += "C:\dev\lib\ffmpeg_prefix\lib\libavutil.a"
+LIBS += "C:\dev\lib\ffmpeg_prefix\lib\libavformat.a"
+LIBS += "C:\dev\lib\ffmpeg_prefix\lib\libswresample.a"
+LIBS += "C:\dev\lib\ffmpeg_prefix\lib\libswscale.a"
+LIBS += "C:\dev\lib\ffmpeg_prefix\lib\libavdevice.a"
+LIBS += "C:\dev\lib\ffmpeg_prefix\lib\libavfilter.a"
+LIBS += "C:\dev\lib\ffmpeg_prefix\lib\libpostproc.a"
+LIBS += "C:\dev\lib\x264\installed\lib\libx264.lib"
 LIBS += bcrypt.lib
 LIBS += gdi32.lib
 LIBS += kernel32.lib
@@ -57,8 +62,10 @@ LIBS += oleaut32.lib
 LIBS += uuid.lib
 LIBS += odbc32.lib
 LIBS += odbccp32.lib
+LIBS += Ws2_32.lib
+LIBS += Secur32.lib
 
-INCLUDEPATH += ../../ffmpeg/
+INCLUDEPATH += C:\dev\lib\ffmpeg_inc\
 INCLUDEPATH += C:\dev\lib\x264
 
 PRECOMPILED_HEADER = pch.h
