@@ -21,11 +21,8 @@
 
 #include <QThread>
 
-#include "x264encoding.h"
-#include "ffmpeg_encoder.h"
-#include "VideoCapture.h"
-
-extern QWindow* windowRef;
+//#include "x264encoding.h"
+//#include "ffmpeg_encoder.h"
 
 void BackEnd::setOutputText(QString s) {
     if (s== m_output_text) return;
@@ -34,32 +31,66 @@ void BackEnd::setOutputText(QString s) {
     emit outputTextChanged();
 }
 
-QImage capturescreen()
-{
-    QScreen *screen = QGuiApplication::primaryScreen();
-    if (windowRef)
-        screen = windowRef->screen();
-    QPixmap pixmap = screen->grabWindow(0);
-    QImage image (pixmap.toImage());
-    return image;
+bool BackEnd::stopEnabled() {
+    bool ret;
+    if(m_thr == nullptr || !m_thr->isRunning() ) {
+        ret = false;
+    }
+    else {
+        ret = true;
+    }
+
+    return ret;
+}
+
+QString BackEnd::startButtonText() {
+    QString ret;
+    if(m_thr == nullptr || !m_thr->isRunning()) {
+        ret = "Start recording";
+    }
+    else if(m_thr->isPaused()) {
+        ret = "Resume recording";
+    }
+    else {
+        ret = "Pause recording";
+    }
+
+    return ret;
 }
 
 void BackEnd::startRecording() {
-    addOutPutText("Recording Started\n");
-
-//    ffmpeg_encoder encoder;
-//    encoder.encode();
-    VideoCapture vc;
-    vc.Init(352,288,25,2500);
-    for (int i = 0; i < 1000; ++i) {
-        vc.AddFrame(capturescreen());
-        QThread::msleep(100);
+    if(m_thr == nullptr || !m_thr->isRunning()) {
+        //start
+        m_thr = new CaptureThread();
+        connect(m_thr, &CaptureThread::resultReady, this, &BackEnd::handleResults);
+        m_thr->start();
+        addOutPutText("Recording Started\n");
     }
-    vc.Finish();
-
-    addOutPutText("Recording Finished\n");
+    else {
+        //pause
+        m_thr->pause();
+        addOutPutText("Recording paused\n");
+    }
+    refreshUI();
 }
 
 void BackEnd::stopRecording() {
-    addOutPutText("Recording Stopped\n");
+    if(m_thr != nullptr && m_thr->isRunning()) {
+        m_thr->Stop();
+        addOutPutText("Recording Stopped\n");
+    }
+    refreshUI();
+}
+
+void BackEnd::handleResults()
+{
+    addOutPutText("Recording Finished\n");
+    delete m_thr;
+    refreshUI();
+}
+
+void BackEnd::refreshUI()
+{
+    emit stopEnabledChanged();
+    emit startButtonTextChanged();
 }

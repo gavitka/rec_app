@@ -16,6 +16,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         VideoCapture.cpp \
         backend.cpp \
+        capturethread.cpp \
         ffmpeg_encoder.cpp \
         main.cpp \
         x264encoding.cpp
@@ -36,6 +37,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 HEADERS += \
     VideoCapture.h \
     backend.h \
+    capturethread.h \
     ffmpeg_encoder.h \
     pch.h \
     x264encoding.h

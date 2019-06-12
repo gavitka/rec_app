@@ -24,11 +24,12 @@ Window {
             RowLayout{
                 anchors.fill: parent
                 Button{
-                    text: "Start"
+                    text: backend.startButtonText
                     onClicked: backend.startRecording()
                 }
                 Button{
                     text: "Stop"
+                    enabled: backend.stopEnabled
                     onClicked: backend.stopRecording()
                 }
             }
