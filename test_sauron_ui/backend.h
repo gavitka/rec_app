@@ -6,19 +6,40 @@
 
 #include"capturethread.h"
 
+enum RECORD_STATUS{
+    Idle,
+    Rec,
+    Pause
+};
+
 class BackEnd : public QObject
 {
     Q_OBJECT
+
     Q_PROPERTY(QString outputText READ outputText WRITE setOutputText NOTIFY outputTextChanged)
     Q_PROPERTY(bool stopEnabled READ stopEnabled NOTIFY stopEnabledChanged)
+    Q_PROPERTY(bool lockParam READ lockParam NOTIFY lockParamChanged)
+
     Q_PROPERTY(QString startButtonText READ startButtonText NOTIFY startButtonTextChanged)
+
+    Q_PROPERTY(int outWidth READ outWidth WRITE setOutWidth NOTIFY outWidthChanged)
+    Q_PROPERTY(int outHeight READ outHeight WRITE setOutHeight NOTIFY outHeightChanged)
+
+    Q_PROPERTY(int framesPerSecond READ framesPerSecond WRITE setFramesPerSecond NOTIFY framesPerSecondChanged)
+    Q_PROPERTY(int shotsPerSecond READ shotsPerSecond WRITE setShotsPerSecond NOTIFY shotsPerSecondChanged)
+
+    Q_PROPERTY(QString outFileName READ outFileName WRITE setOutFileName NOTIFY outFileNameChanged)
 
 public:
 
-    static QObject *qmlInstance(QQmlEngine *engine, QJSEngine *scriptEngine)
-    {
+    static QObject *qmlInstance(QQmlEngine *engine, QJSEngine *scriptEngine) {
         Q_UNUSED(engine);
         Q_UNUSED(scriptEngine);
+
+        return (QObject*)getInstance();
+    }
+
+    static BackEnd* getInstance() {
 
         if(!m_instance) {
             m_instance = new BackEnd();
@@ -30,8 +51,16 @@ public:
         QObject(parent),
         m_thr(nullptr)
     {
+        setOutWidth(352);
+        setOutHeight(288);
+        setFramesPerSecond(25);
+        setShotsPerSecond(25);
+        setOutFileName("c:/dev/rec_app/filename.mp4");
+        setRecordStatus(RECORD_STATUS::Idle);
         refreshUI();
     }
+
+    /* <PROP> */
 
     QString outputText() {return m_output_text;}
     void setOutputText(QString s);
@@ -39,12 +68,58 @@ public:
     bool stopEnabled();
 
     QString startButtonText();
+
+    int outWidth(){return m_outWidth;}
+    void setOutWidth(int value){
+        m_outWidth = value;
+        emit outWidthChanged();
+    }
+
+    int outHeight(){return m_outHeight;}
+    void setOutHeight(int value){
+        m_outHeight = value;
+        emit outHeightChanged();
+    }
+
+    int framesPerSecond(){return m_framesPerSecond;}
+    void setFramesPerSecond(int value){
+        m_framesPerSecond = value;
+        emit framesPerSecondChanged();
+    }
+
+    int shotsPerSecond(){return m_shotsPerSecond;}
+    void setShotsPerSecond(int value){
+        m_shotsPerSecond = value;
+        emit shotsPerSecondChanged();
+    }
+
+    QString outFileName(){return m_outFileName;}
+    void setOutFileName(QString value){
+        m_outFileName = value;
+        emit outFileNameChanged();
+    }
+
+    bool lockParam();
+
+    int recordStatus(){return m_record_status;}
+    void setRecordStatus(int value){
+        m_record_status = value;
+        refreshUI();
+    }
+
+    /* </PROP> */
     
 signals:
 
     void outputTextChanged();
     void stopEnabledChanged();
     void startButtonTextChanged();
+    void outWidthChanged();
+    void outHeightChanged();
+    void framesPerSecondChanged();
+    void shotsPerSecondChanged();
+    void outFileNameChanged();
+    void lockParamChanged();
 
 public slots:
 
@@ -55,9 +130,20 @@ public slots:
 
 private:
 
-    static QObject* m_instance;
+    static BackEnd* m_instance;
     QString m_output_text;
     CaptureThread* m_thr;
+
+    int m_outWidth;
+    int m_outHeight;
+
+    int m_framesPerSecond;
+    int m_shotsPerSecond;
+    bool m_lockParam;
+
+    int m_record_status;
+
+    QString m_outFileName;
 
     void addOutPutText(QString text) {
         setOutputText(outputText() + text);

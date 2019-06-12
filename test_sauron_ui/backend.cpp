@@ -21,7 +21,7 @@
 
 #include <QThread>
 
-QObject* BackEnd::m_instance = nullptr;
+BackEnd* BackEnd::m_instance = nullptr;
 
 void BackEnd::setOutputText(QString s) {
     if (s== m_output_text) return;
@@ -31,65 +31,72 @@ void BackEnd::setOutputText(QString s) {
 }
 
 bool BackEnd::stopEnabled() {
-    bool ret;
-    if(m_thr == nullptr || !m_thr->isRunning() ) {
-        ret = false;
-    }
-    else {
-        ret = true;
-    }
-
-    return ret;
+    return !lockParam();
 }
 
 QString BackEnd::startButtonText() {
     QString ret;
-    if(m_thr == nullptr || !m_thr->isRunning()) {
+    if(recordStatus() == RECORD_STATUS::Idle) {
         ret = "Start recording";
     }
-    else if(m_thr->isPaused()) {
+    else if(recordStatus() == RECORD_STATUS::Pause) {
         ret = "Resume recording";
     }
     else {
         ret = "Pause recording";
     }
-
     return ret;
 }
 
 void BackEnd::startRecording() {
-    if(m_thr == nullptr || !m_thr->isRunning()) {
+    if(recordStatus() == RECORD_STATUS::Idle) {
         //start
-        m_thr = new CaptureThread(4); // specify the capture frame rate
+        m_thr = new CaptureThread(shotsPerSecond()); // specify the capture frame rate
         connect(m_thr, &CaptureThread::resultReady, this, &BackEnd::handleResults);
         m_thr->start();
+        setRecordStatus(RECORD_STATUS::Rec);
         addOutPutText("Recording Started\n");
     }
     else {
         //pause
         m_thr->togglepause();
-        addOutPutText("Recording paused\n");
+        if(m_thr->isPaused()) {
+            setRecordStatus(RECORD_STATUS::Pause);
+            addOutPutText("Recording paused\n");
+        }
+        else {
+            setRecordStatus(RECORD_STATUS::Rec);
+            addOutPutText("Recording resumed\n");
+        }
     }
-    refreshUI();
 }
 
 void BackEnd::stopRecording() {
     if(m_thr != nullptr && m_thr->isRunning()) {
         m_thr->Stop();
+        setRecordStatus(RECORD_STATUS::Idle);
         addOutPutText("Recording Stopped\n");
     }
-    refreshUI();
 }
 
 void BackEnd::handleResults()
 {
     addOutPutText("Recording Finished\n");
     delete m_thr;
-    refreshUI();
 }
 
 void BackEnd::refreshUI()
 {
+    emit lockParamChanged();
     emit stopEnabledChanged();
     emit startButtonTextChanged();
+}
+
+bool BackEnd::lockParam(){
+    if (recordStatus() == RECORD_STATUS::Idle) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }

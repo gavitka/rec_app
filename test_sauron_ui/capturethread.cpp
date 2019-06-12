@@ -4,6 +4,8 @@
 #include <QGuiApplication>
 #include <QWindow>
 
+#include "backend.h"
+
 extern QWindow* windowRef;
 
 CaptureThread::CaptureThread(int shots_per_second):
@@ -19,8 +21,14 @@ CaptureThread::CaptureThread(int shots_per_second):
 }
 
 void CaptureThread::run() {
+    int w, h, fps;
+
+    w = BackEnd::getInstance()->outWidth();
+    h = BackEnd::getInstance()->outHeight();
+    fps = BackEnd::getInstance()->framesPerSecond();
+
     VideoCapture vc;
-    vc.Init(352,288,25,2500);
+    vc.Init(w, h, fps, 2500);
     while (true) {
 
         while(m_pause) {

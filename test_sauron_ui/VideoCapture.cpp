@@ -3,6 +3,8 @@
 #define VIDEO_TMP_FILE "tmp.h264"
 #define FINAL_FILE_NAME "record.mp4"
 
+#include "backend.h"
+
 
 using namespace std;
 
@@ -181,6 +183,12 @@ void VideoCapture::Free() {
 }
 
 void VideoCapture::Remux() {
+
+    const char* filename;
+    QByteArray ba = BackEnd::getInstance()->outFileName().toLatin1();
+    filename = ba.data();
+
+
     AVFormatContext *ifmt_ctx = nullptr, *ofmt_ctx = nullptr;
     int err;
 
@@ -192,7 +200,7 @@ void VideoCapture::Remux() {
         fprintf(stderr,"Failed to retrieve input stream information");
         goto end;
     }
-    if ((err = avformat_alloc_output_context2(&ofmt_ctx, nullptr, nullptr, FINAL_FILE_NAME))) {
+    if ((err = avformat_alloc_output_context2(&ofmt_ctx, nullptr, nullptr, filename))) {
         fprintf(stderr,"Failed to allocate output context");
         goto end;
     }
@@ -208,7 +216,7 @@ void VideoCapture::Remux() {
     outVideoStream->codecpar->codec_tag = 0;
 
     if (!(ofmt_ctx->oformat->flags & AVFMT_NOFILE)) {
-        if ((err = avio_open(&ofmt_ctx->pb, FINAL_FILE_NAME, AVIO_FLAG_WRITE)) < 0) {
+        if ((err = avio_open(&ofmt_ctx->pb, filename, AVIO_FLAG_WRITE)) < 0) {
             fprintf(stderr,"Failed to open output file");
             goto end;
         }
