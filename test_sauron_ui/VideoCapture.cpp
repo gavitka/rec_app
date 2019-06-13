@@ -8,10 +8,10 @@
 
 using namespace std;
 
-void VideoCapture::Init(int width, int height, int fpsrate, int bitrate) {
+void VideoCapture::Init(int width, int height, int fpsrate, int bitrate, const char* filename) {
 
     fps = fpsrate;
-
+    m_fname = filename;
     int err;
 
     if (!(oformat = av_guess_format(nullptr, VIDEO_TMP_FILE, nullptr))) {
@@ -26,7 +26,7 @@ void VideoCapture::Init(int width, int height, int fpsrate, int bitrate) {
     }
 
     if (!(codec = avcodec_find_encoder(oformat->video_codec))) {
-       fprintf(stderr,"Failed to find encoder");
+        fprintf(stderr,"Failed to find encoder");
         Free();
         return;
     }
@@ -87,7 +87,7 @@ void VideoCapture::Init(int width, int height, int fpsrate, int bitrate) {
 }
 
 void VideoCapture::AddFrame(QImage image) {
-//void VideoCapture::AddFrame(uint8_t *data) {
+    //void VideoCapture::AddFrame(uint8_t *data) {
     int err;
     if (!videoFrame) {
 
@@ -102,7 +102,15 @@ void VideoCapture::AddFrame(QImage image) {
         }
     }
 
-    if (!swsCtx) {
+    bool reinitialize_context = false;
+
+    if(image.width() != lastimagewidth || image.height() != lastimageheight){
+        reinitialize_context = true;
+        lastimagewidth = image.width();
+        lastimageheight = image.height();
+    }
+
+    if (!swsCtx || reinitialize_context) {
         swsCtx = sws_getContext(image.width(), image.height(), AV_PIX_FMT_RGBA, cctx->width, cctx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, nullptr, nullptr, nullptr);
     }
 
@@ -184,11 +192,6 @@ void VideoCapture::Free() {
 
 void VideoCapture::Remux() {
 
-    const char* filename;
-    QByteArray ba = BackEnd::getInstance()->outFileName().toLatin1();
-    filename = ba.data();
-
-
     AVFormatContext *ifmt_ctx = nullptr, *ofmt_ctx = nullptr;
     int err;
 
@@ -200,7 +203,7 @@ void VideoCapture::Remux() {
         fprintf(stderr,"Failed to retrieve input stream information");
         goto end;
     }
-    if ((err = avformat_alloc_output_context2(&ofmt_ctx, nullptr, nullptr, filename))) {
+    if ((err = avformat_alloc_output_context2(&ofmt_ctx, nullptr, nullptr, m_fname))) {
         fprintf(stderr,"Failed to allocate output context");
         goto end;
     }
@@ -216,7 +219,7 @@ void VideoCapture::Remux() {
     outVideoStream->codecpar->codec_tag = 0;
 
     if (!(ofmt_ctx->oformat->flags & AVFMT_NOFILE)) {
-        if ((err = avio_open(&ofmt_ctx->pb, filename, AVIO_FLAG_WRITE)) < 0) {
+        if ((err = avio_open(&ofmt_ctx->pb, m_fname, AVIO_FLAG_WRITE)) < 0) {
             fprintf(stderr,"Failed to open output file");
             goto end;
         }

@@ -17,9 +17,8 @@ SOURCES += \
         VideoCapture.cpp \
         backend.cpp \
         capturethread.cpp \
-        ffmpeg_encoder.cpp \
-        main.cpp \
-        x264encoding.cpp
+        main.cpp
+
 
 RESOURCES += qml.qrc
 

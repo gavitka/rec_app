@@ -18,6 +18,8 @@
 #include <QtWidgets>
 #include <QPixmap>
 #include <QQmlApplicationEngine>
+#include <QDir>
+#include <QRegularExpression>
 
 #include <QThread>
 
@@ -83,6 +85,9 @@ void BackEnd::handleResults()
 {
     addOutPutText("Recording Finished\n");
     delete m_thr;
+
+    QString value = m_outFileName;
+    setOutFileName(value);
 }
 
 void BackEnd::refreshUI()
@@ -92,6 +97,7 @@ void BackEnd::refreshUI()
     emit startButtonTextChanged();
 }
 
+
 bool BackEnd::lockParam(){
     if (recordStatus() == RECORD_STATUS::Idle) {
         return true;
@@ -100,3 +106,107 @@ bool BackEnd::lockParam(){
         return false;
     }
 }
+
+void BackEnd::setOutFileName(QString value){
+    if(value.right(4) != ".mp4") {
+        value = value + ".mp4";
+    }
+    QFileInfo fi(value);
+    QString fname = fi.fileName();
+    QDir dir = fi.dir();
+    if(QFileInfo::exists(value)) {
+        while(QFileInfo::exists(value))
+        {
+            // (.*)\_?(\d)+\.(\w+)
+            QRegularExpression re("(.*?)\\_?(\\d*)\\.(\\w+)");
+            QRegularExpressionMatch match = re.match(fname);
+            if(match.hasMatch()) {
+                QString num = match.captured(2);
+                int inum = num.toInt();
+                fname = match.captured(1)+"_"+ QString::number(inum + 1) +
+                        "." + match.captured(3);
+                value = dir.absolutePath() + QDir::separator() + fname;
+                fi = QFileInfo(value);
+            }
+            else {
+                value = dir.absolutePath() + QDir::separator() + fname;
+                break;
+            }
+        }
+    }
+    else {
+        if(!dir.exists()) {
+            qDebug() << "Folder not exists" << value << endl;
+            value = "";
+        }
+        else {
+            // [^!?<>:/\|"*\/] - windows banned characters
+            // !?<>:|\"* -> !?<>:|\\\\"*
+            QRegularExpression re("!?<>:|\\\"*\\\\\\/");
+            QRegularExpressionMatch match = re.match(value);
+            if (match.hasMatch()) {
+                qDebug() << "Wrong filename" << value << endl;
+                value = "";
+            }
+            value = fi.absoluteDir().absolutePath() + "\\" + fname;
+        }
+    }
+    if (value.isEmpty() && m_outFileName.isEmpty()) {
+        value = QDir::home().absolutePath() + "\\record.mp4";
+    }
+    if(!value.isEmpty()) {
+        m_outFileName = value;
+    }
+    emit outFileNameChanged();
+}
+
+void BackEnd::getWindowsList()
+{
+    //std::vector<std::wstring> titles;
+    m_dataList.clear();
+    EnumWindows(getWindowsListCallback, reinterpret_cast<LPARAM>(&m_dataList));
+    // At this point, titles if fully populated and could be displayed, e.g.:
+//    for (const auto& title : titles) {
+//        QString str = QString::fromStdWString(title);
+//        addOutPutText(QString("Title: ") + str + "\n");
+//    }
+//    return;
+
+    emit windowListChanged();
+}
+
+BOOL CALLBACK getWindowsListCallback(HWND hwnd, LPARAM lParam) {
+    const DWORD TITLE_SIZE = 1024;
+    WCHAR windowTitle[TITLE_SIZE];
+
+    GetWindowTextW(hwnd, windowTitle, TITLE_SIZE);
+
+    int length = ::GetWindowTextLength(hwnd);
+    std::wstring title(&windowTitle[0]);
+    if (!IsWindowVisible(hwnd) || length == 0 || title == L"Program Manager") {
+        return TRUE;
+    }
+
+    QList<QObject*>& dataList = *reinterpret_cast<QList<QObject*>*>(lParam);
+    dataList.append(new WindowObject(hwnd, QString::fromStdWString(windowTitle)));
+
+    // Retrieve the pointer passed into this callback, and re-'type' it.
+    // The only way for a C API to pass arbitrary data is by means of a void*.
+//    std::vector<std::wstring>& titles =
+//            *reinterpret_cast<std::vector<std::wstring>*>(lParam);
+//    titles.push_back(title);
+
+    return TRUE;
+}
+
+void BackEnd::setWindow(int index)
+{
+    WindowObject* currentWindow = (WindowObject*)m_dataList.at(index);
+    HWND hwnd = currentWindow->getHwnd();
+    m_hwnd = hwnd;
+    qDebug() << "HWND selected: " << currentWindow->getHwnd() << endl;
+
+    //addOutPutText(QString("HWND selected: ") + QQString::fromRawData(currentWindow->getHwnd(), sizeo) currentWindow->getHwnd() + "\n");
+}
+
+

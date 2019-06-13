@@ -1,8 +1,13 @@
 #pragma once
 
+#include "pch.h"
+
+#include <QFile>
 #include <QObject>
 #include <QQmlEngine>
 #include <thread>
+#include <QList>
+#include <QSettings>
 
 #include"capturethread.h"
 
@@ -11,6 +16,8 @@ enum RECORD_STATUS{
     Rec,
     Pause
 };
+
+class WindowObject;
 
 class BackEnd : public QObject
 {
@@ -29,6 +36,8 @@ class BackEnd : public QObject
     Q_PROPERTY(int shotsPerSecond READ shotsPerSecond WRITE setShotsPerSecond NOTIFY shotsPerSecondChanged)
 
     Q_PROPERTY(QString outFileName READ outFileName WRITE setOutFileName NOTIFY outFileNameChanged)
+
+    Q_PROPERTY(QList<QObject*> windowList READ windowList NOTIFY windowListChanged)
 
 public:
 
@@ -51,10 +60,10 @@ public:
         QObject(parent),
         m_thr(nullptr)
     {
-        setOutWidth(352);
-        setOutHeight(288);
+        setOutWidth(1920/4);
+        setOutHeight(1200/4);
         setFramesPerSecond(25);
-        setShotsPerSecond(25);
+        setShotsPerSecond(3);
         setOutFileName("c:/dev/rec_app/filename.mp4");
         setRecordStatus(RECORD_STATUS::Idle);
         refreshUI();
@@ -94,10 +103,7 @@ public:
     }
 
     QString outFileName(){return m_outFileName;}
-    void setOutFileName(QString value){
-        m_outFileName = value;
-        emit outFileNameChanged();
-    }
+    void setOutFileName(QString value);
 
     bool lockParam();
 
@@ -107,8 +113,16 @@ public:
         refreshUI();
     }
 
+    QList<QObject*> windowList() {
+        return m_dataList;
+    }
+
+    HWND getHwnd(){return m_hwnd;}
     /* </PROP> */
-    
+
+    QSettings* getSettings(){return &m_settings;}
+
+
 signals:
 
     void outputTextChanged();
@@ -120,6 +134,7 @@ signals:
     void shotsPerSecondChanged();
     void outFileNameChanged();
     void lockParamChanged();
+    void windowListChanged();
 
 public slots:
 
@@ -127,6 +142,8 @@ public slots:
     void stopRecording();
     void handleResults();
     void refreshUI();
+    void getWindowsList();
+    void setWindow(int index);
 
 private:
 
@@ -144,9 +161,41 @@ private:
     int m_record_status;
 
     QString m_outFileName;
+    QList<QObject*> m_dataList;
+    HWND m_hwnd;
+    QSettings m_settings;
 
     void addOutPutText(QString text) {
         setOutputText(outputText() + text);
     }
 
+
 };
+
+class WindowObject : public QObject
+{
+    Q_OBJECT
+
+    Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
+
+public:
+    WindowObject(HWND hwnd, QString name):
+        m_hwnd (hwnd),
+        m_name (name)
+    { }
+
+    QString name() {return m_name;}
+    void setName(QString value) { m_name = value; emit nameChanged();}
+
+    HWND getHwnd() {return m_hwnd;}
+
+signals:
+    void nameChanged();
+
+private:
+    HWND m_hwnd;
+    QString m_name;
+};
+
+
+BOOL CALLBACK getWindowsListCallback(HWND hWnd, LPARAM lParam);

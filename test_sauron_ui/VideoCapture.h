@@ -13,41 +13,41 @@
 
 extern "C"
 {
-    #include <libavcodec/avcodec.h>
-    #include <libavcodec/avfft.h>
+#include <libavcodec/avcodec.h>
+#include <libavcodec/avfft.h>
 
-    #include <libavdevice/avdevice.h>
+#include <libavdevice/avdevice.h>
 
-    #include <libavfilter/avfilter.h>
-    //#include <libavfilter/avfiltergraph.h>
-    #include <libavfilter/buffersink.h>
-    #include <libavfilter/buffersrc.h>
+#include <libavfilter/avfilter.h>
+//#include <libavfilter/avfiltergraph.h>
+#include <libavfilter/buffersink.h>
+#include <libavfilter/buffersrc.h>
 
-    #include <libavformat/avformat.h>
-    #include <libavformat/avio.h>
+#include <libavformat/avformat.h>
+#include <libavformat/avio.h>
 
-    // libav resample
+// libav resample
 
-    #include <libavutil/opt.h>
-    #include <libavutil/common.h>
-    #include <libavutil/channel_layout.h>
-    #include <libavutil/imgutils.h>
-    #include <libavutil/mathematics.h>
-    #include <libavutil/samplefmt.h>
-    #include <libavutil/time.h>
-    #include <libavutil/opt.h>
-    #include <libavutil/pixdesc.h>
-    #include <libavutil/file.h>
+#include <libavutil/opt.h>
+#include <libavutil/common.h>
+#include <libavutil/channel_layout.h>
+#include <libavutil/imgutils.h>
+#include <libavutil/mathematics.h>
+#include <libavutil/samplefmt.h>
+#include <libavutil/time.h>
+#include <libavutil/opt.h>
+#include <libavutil/pixdesc.h>
+#include <libavutil/file.h>
 
 
-        // hwaccel
-    // #include "libavcodec/vdpau.h"
-    // #include "libavutil/hwcontext.h"
-    // #include "libavutil/hwcontext_vdpau.h"
+// hwaccel
+// #include "libavcodec/vdpau.h"
+// #include "libavutil/hwcontext.h"
+// #include "libavutil/hwcontext_vdpau.h"
 
-        // lib swresample
+// lib swresample
 
-    #include <libswscale/swscale.h>
+#include <libswscale/swscale.h>
 }
 
 //    std::ofstream logFile;
@@ -78,53 +78,61 @@ extern "C"
 //        Log(message);
 //    }
 
-    class VideoCapture {
-    public:
+class VideoCapture {
+public:
 
-        VideoCapture() {
-            oformat = nullptr;
-            ofctx = nullptr;
-            videoStream = nullptr;
-            videoFrame = nullptr;
-            swsCtx = nullptr;
-            frameCounter = 0;
+    VideoCapture():
+        lastimagewidth(0),
+        lastimageheight(0)
+    {
+        oformat = nullptr;
+        ofctx = nullptr;
+        videoStream = nullptr;
+        videoFrame = nullptr;
+        swsCtx = nullptr;
+        frameCounter = 0;
+        m_fname = nullptr;
 
-            // Initialize libavcodec
-            av_register_all();
-            //av_log_set_callback(avlog_cb);
-        }
+        // Initialize libavcodec
+        av_register_all();
+        //av_log_set_callback(avlog_cb);
+    }
 
-        ~VideoCapture() {
-            //Free();
-        }
+    ~VideoCapture() {
+        //Free();
+    }
 
-        void Init(int width, int height, int fpsrate, int bitrate);
+    void Init(int width, int height, int fpsrate, int bitrate, const char* fname);
 
-        void AddFrame(QImage image);
+    void AddFrame(QImage image);
 
-        void Finish();
+    void Finish();
 
-    private:
+private:
 
-        AVOutputFormat *oformat;
-        AVFormatContext *ofctx;
+    AVOutputFormat *oformat;
+    AVFormatContext *ofctx;
 
-        AVStream *videoStream;
-        AVFrame *videoFrame;
+    AVStream *videoStream;
+    AVFrame *videoFrame;
 
-        AVCodec *codec;
-        AVCodecContext *cctx;
+    AVCodec *codec;
+    AVCodecContext *cctx;
 
-        SwsContext *swsCtx;
+    SwsContext *swsCtx;
 
-        int frameCounter;
+    const char* m_fname;
 
-        int fps;
+    int frameCounter;
 
-        void Free();
+    int fps;
+    int lastimagewidth;
+    int lastimageheight;
 
-        void Remux();
-    };
+    void Free();
+
+    void Remux();
+};
 
 //    VideoCapture* Init(int width, int height, int fps, int bitrate) {
 //        VideoCapture *vc = new VideoCapture();

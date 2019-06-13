@@ -2,6 +2,7 @@
 #include "VideoCapture.h"
 
 #include <QGuiApplication>
+#include <QPixmap>
 #include <QWindow>
 
 #include "backend.h"
@@ -22,20 +23,23 @@ CaptureThread::CaptureThread(int shots_per_second):
 
 void CaptureThread::run() {
     int w, h, fps;
+    const char* fpussy;
 
     w = BackEnd::getInstance()->outWidth();
     h = BackEnd::getInstance()->outHeight();
     fps = BackEnd::getInstance()->framesPerSecond();
+    QByteArray ba = BackEnd::getInstance()->outFileName().toLatin1();
+    fpussy = ba.data();
 
     VideoCapture vc;
-    vc.Init(w, h, fps, 2500);
+    vc.Init(w, h, fps, 2500, fpussy);
     while (true) {
 
         while(m_pause) {
           QThread::msleep(100);
         }
 
-        vc.AddFrame(CaptureScreen());
+        vc.AddFrame(CaptureWindow());
 
         if(m_stop) {
             break;
@@ -49,6 +53,13 @@ void CaptureThread::run() {
 
 QImage CaptureThread::CaptureScreen() {
     QPixmap pixmap = screen->grabWindow(0);
+    QImage image (pixmap.toImage());
+    return image;
+}
+
+QImage CaptureThread::CaptureWindow()
+{
+    QPixmap pixmap = QPixmap::grabWindow((WId)BackEnd::getInstance()->getHwnd());
     QImage image (pixmap.toImage());
     return image;
 }

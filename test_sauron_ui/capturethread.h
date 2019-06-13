@@ -26,6 +26,7 @@ public:
 
 private:
     QImage CaptureScreen();
+    QImage CaptureWindow();
     bool m_stop;
     bool m_pause;
     QScreen* screen;

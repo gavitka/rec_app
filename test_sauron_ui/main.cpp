@@ -1,6 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
+#include <QSettings>
 
 #include "pch.h"
 #include "backend.h"
@@ -9,6 +10,10 @@ QWindow* windowRef;
 
 int main(int argc, char *argv[])
 {
+    QCoreApplication::setOrganizationName("Gavitka software");
+    QCoreApplication::setOrganizationDomain("gavitka.com");
+    QCoreApplication::setApplicationName("Diversity recording");
+
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
     QGuiApplication app(argc, argv);
@@ -25,8 +30,8 @@ int main(int argc, char *argv[])
     }, Qt::QueuedConnection);
     engine.load(url);
 
-//    if( !(windowRef = qobject_cast<QWindow*>( engine.rootObjects().at(0)) ))
-//        return -1;
+    //    if( !(windowRef = qobject_cast<QWindow*>( engine.rootObjects().at(0)) ))
+    //        return -1;
 
     return app.exec();
 }
