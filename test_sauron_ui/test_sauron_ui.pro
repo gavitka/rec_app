@@ -37,9 +37,8 @@ HEADERS += \
     VideoCapture.h \
     backend.h \
     capturethread.h \
-    ffmpeg_encoder.h \
-    pch.h \
-    x264encoding.h
+    kheventfilter.h \
+    pch.h
 
 LIBS += "C:\dev\lib\ffmpeg_prefix\lib\libavcodec.a"
 LIBS += "C:\dev\lib\ffmpeg_prefix\lib\libavutil.a"
@@ -68,6 +67,10 @@ LIBS += Secur32.lib
 
 INCLUDEPATH += C:\dev\lib\ffmpeg_inc\
 INCLUDEPATH += C:\dev\lib\x264
+
+#mousehook dll
+INCLUDEPATH += ..\test_sauron_hooks_dll
+LIBS += -L..\build_dll\debug -ltest_sauron_hooks_dll
 
 PRECOMPILED_HEADER = pch.h
 

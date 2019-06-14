@@ -4,8 +4,10 @@
 #include <QGuiApplication>
 #include <QPixmap>
 #include <QWindow>
+#include <QDebug>
 
 #include "backend.h"
+#include "mousehook.h"
 
 extern QWindow* windowRef;
 
@@ -19,9 +21,23 @@ CaptureThread::CaptureThread(int shots_per_second):
         screen = windowRef->screen();
 
     m_shots_per_second = 12;
+
+    m_recMode = BackEnd::getInstance()->recordMode();
+    m_hwnd = BackEnd::getInstance()->getHwnd();
+
+    if(m_recMode == RECORD_MODE::Window) {
+        qDebug() << "Installing mouse hook";
+        InstallMouseHook((HWND)windowRef->winId(), m_hwnd);
+    }
+}
+
+CaptureThread::~CaptureThread()
+{
+    RemoveHooks();
 }
 
 void CaptureThread::run() {
+
     int w, h, fps;
     const char* fpussy;
 
@@ -34,18 +50,21 @@ void CaptureThread::run() {
     VideoCapture vc;
     vc.Init(w, h, fps, 2500, fpussy);
     while (true) {
-
         while(m_pause) {
-          QThread::msleep(100);
+            QThread::msleep(100);
         }
-
-        vc.AddFrame(CaptureWindow());
-
+//        qDebug() << "record mode:" << BackEnd::getInstance()->recordMode() << endl;
+        if(m_recMode == RECORD_MODE::Window) {
+            vc.AddFrame(CaptureWindow());
+        }
+        else {
+            vc.AddFrame(CaptureScreen());
+        }
         if(m_stop) {
             break;
         }
-
-        QThread::msleep((int)1000/m_shots_per_second);
+        ulong sleeptimeout = static_cast<ulong>(1000/m_shots_per_second);
+        QThread::msleep(sleeptimeout);
     }
     vc.Finish();
     emit CaptureThread::resultReady();
@@ -59,7 +78,7 @@ QImage CaptureThread::CaptureScreen() {
 
 QImage CaptureThread::CaptureWindow()
 {
-    QPixmap pixmap = QPixmap::grabWindow((WId)BackEnd::getInstance()->getHwnd());
+    QPixmap pixmap = QPixmap::grabWindow((WId)m_hwnd);
     QImage image (pixmap.toImage());
     return image;
 }

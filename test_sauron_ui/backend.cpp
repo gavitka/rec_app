@@ -52,7 +52,7 @@ QString BackEnd::startButtonText() {
 
 void BackEnd::startRecording() {
     if(recordStatus() == RECORD_STATUS::Idle) {
-        //start
+        // kdj jhstart
         m_thr = new CaptureThread(shotsPerSecond()); // specify the capture frame rate
         connect(m_thr, &CaptureThread::resultReady, this, &BackEnd::handleResults);
         m_thr->start();
@@ -105,6 +105,27 @@ bool BackEnd::lockParam(){
     else {
         return false;
     }
+}
+
+bool BackEnd::recMode(){
+//    qDebug() << "Get Rec Mode: " << m_recMode << endl;
+    if(m_recMode == RECORD_MODE::Window){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+void BackEnd::setRecMode(bool value){
+//    qDebug() << "Set Rec Mode: " << value << endl;
+    if(value == true) {
+        m_recMode = RECORD_MODE::Window;
+    }
+    else {
+        m_recMode = RECORD_MODE::Screen;
+    }
+    emit recModeChanged();
 }
 
 void BackEnd::setOutFileName(QString value){
@@ -166,11 +187,11 @@ void BackEnd::getWindowsList()
     m_dataList.clear();
     EnumWindows(getWindowsListCallback, reinterpret_cast<LPARAM>(&m_dataList));
     // At this point, titles if fully populated and could be displayed, e.g.:
-//    for (const auto& title : titles) {
-//        QString str = QString::fromStdWString(title);
-//        addOutPutText(QString("Title: ") + str + "\n");
-//    }
-//    return;
+    //    for (const auto& title : titles) {
+    //        QString str = QString::fromStdWString(title);
+    //        addOutPutText(QString("Title: ") + str + "\n");
+    //    }
+    //    return;
 
     emit windowListChanged();
 }
@@ -190,12 +211,6 @@ BOOL CALLBACK getWindowsListCallback(HWND hwnd, LPARAM lParam) {
     QList<QObject*>& dataList = *reinterpret_cast<QList<QObject*>*>(lParam);
     dataList.append(new WindowObject(hwnd, QString::fromStdWString(windowTitle)));
 
-    // Retrieve the pointer passed into this callback, and re-'type' it.
-    // The only way for a C API to pass arbitrary data is by means of a void*.
-//    std::vector<std::wstring>& titles =
-//            *reinterpret_cast<std::vector<std::wstring>*>(lParam);
-//    titles.push_back(title);
-
     return TRUE;
 }
 
@@ -204,9 +219,8 @@ void BackEnd::setWindow(int index)
     WindowObject* currentWindow = (WindowObject*)m_dataList.at(index);
     HWND hwnd = currentWindow->getHwnd();
     m_hwnd = hwnd;
-    qDebug() << "HWND selected: " << currentWindow->getHwnd() << endl;
-
-    //addOutPutText(QString("HWND selected: ") + QQString::fromRawData(currentWindow->getHwnd(), sizeo) currentWindow->getHwnd() + "\n");
+    //setRecordMode(RECORD_MODE::Window);
+    qDebug() << "HWND selected: " << currentWindow->getHwnd();
 }
 
 

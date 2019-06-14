@@ -35,7 +35,6 @@ Window {
 
             ColumnLayout{
                 anchors.fill: parent
-
                 RowLayout{
                     Label { text: "File name" }
                     TextField  {
@@ -48,7 +47,6 @@ Window {
                         onEditingFinished: BackEnd.outFileName = text
                     }
                 }
-
                 RowLayout{
                     Label { text: "Output Width" }
                     TextField  {
@@ -91,13 +89,33 @@ Window {
                     }
                 }
                 RowLayout{
+                    Label { text: "Record window" }
+                    CheckBox{
+                        id: recCheck
+                        enabled: BackEnd.lockParam
+                        onClicked: {
+                            BackEnd.recMode = checked;
+                            BackEnd.getWindowsList()
+                        }
+                        Component.onCompleted: checked = BackEnd.recMode
+                        Connections {
+                            target: BackEnd
+                            onDataChanged: myCheck.checked = BackEnd.recMode
+                        }
+                    }
                     Label { text: "Select window" }
                     ComboBox{
                         Layout.fillWidth: true
                         model: BackEnd.windowList
                         textRole:"name"
                         onCurrentIndexChanged:BackEnd.setWindow(currentIndex)
+                        enabled: BackEnd.lockParam
                     }
+                }
+                RowLayout{
+                    Label{ text: "mouse position" }
+                    Text { text: BackEnd.mouseX }
+                    Text { text: BackEnd.mouseY }
                 }
             }
         }
@@ -116,12 +134,11 @@ Window {
                     enabled: BackEnd.stopEnabled
                     onClicked: BackEnd.stopRecording()
                 }
-                Button{
-                    text: "ShowWindows"
-                    enabled: true
-                    onClicked: BackEnd.getWindowsList()
-
-                }
+//                Button{
+//                    text: "ShowWindows"
+//                    enabled: true
+//                    onClicked: BackEnd.getWindowsList()
+//                }
             }
         }
 

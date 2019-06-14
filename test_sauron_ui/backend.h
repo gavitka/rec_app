@@ -17,6 +17,11 @@ enum RECORD_STATUS{
     Pause
 };
 
+enum RECORD_MODE {
+    Screen,
+    Window
+};
+
 class WindowObject;
 
 class BackEnd : public QObject
@@ -38,6 +43,11 @@ class BackEnd : public QObject
     Q_PROPERTY(QString outFileName READ outFileName WRITE setOutFileName NOTIFY outFileNameChanged)
 
     Q_PROPERTY(QList<QObject*> windowList READ windowList NOTIFY windowListChanged)
+
+    Q_PROPERTY(int mouseX READ mouseX WRITE setMouseX NOTIFY mouseXChanged)
+    Q_PROPERTY(int mouseY READ mouseY WRITE setMouseX NOTIFY mouseYChanged)
+
+    Q_PROPERTY(bool recMode READ recMode WRITE setRecMode NOTIFY recModeChanged)
 
 public:
 
@@ -66,6 +76,8 @@ public:
         setShotsPerSecond(3);
         setOutFileName("c:/dev/rec_app/filename.mp4");
         setRecordStatus(RECORD_STATUS::Idle);
+        m_recMode = RECORD_MODE::Screen;
+
         refreshUI();
     }
 
@@ -77,6 +89,12 @@ public:
     bool stopEnabled();
 
     QString startButtonText();
+
+    int mouseX(){return m_mousex;}
+    void setMouseX(int value){m_mousex = value; emit mouseXChanged();}
+
+    int mouseY(){return m_mousey;}
+    void setMouseY(int value){m_mousey = value; emit mouseYChanged();}
 
     int outWidth(){return m_outWidth;}
     void setOutWidth(int value){
@@ -113,6 +131,15 @@ public:
         refreshUI();
     }
 
+    bool recMode();
+    void setRecMode(bool value);
+
+    int recordMode(){return m_recMode;}
+    void setRecordMode(int value){
+        m_recMode = value;
+        emit recModeChanged();
+    }
+
     QList<QObject*> windowList() {
         return m_dataList;
     }
@@ -135,6 +162,9 @@ signals:
     void outFileNameChanged();
     void lockParamChanged();
     void windowListChanged();
+    void mouseXChanged();
+    void mouseYChanged();
+    void recModeChanged();
 
 public slots:
 
@@ -154,11 +184,15 @@ private:
     int m_outWidth;
     int m_outHeight;
 
+    int m_mousex;
+    int m_mousey;
+
     int m_framesPerSecond;
     int m_shotsPerSecond;
     bool m_lockParam;
 
     int m_record_status;
+    int m_recMode;
 
     QString m_outFileName;
     QList<QObject*> m_dataList;

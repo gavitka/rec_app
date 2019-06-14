@@ -17,6 +17,6 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 
 extern "C" MOUSEHOOK_API LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
-MOUSEHOOK_API void InstallMouseHook(HWND hWndCaller);
+MOUSEHOOK_API void InstallMouseHook(HWND hWndCaller, HWND target);
 
 MOUSEHOOK_API void RemoveHooks(void);

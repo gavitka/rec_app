@@ -16,3 +16,5 @@ libav/
 *.mp4
 
 Trash/
+build_dll/
+build_app/

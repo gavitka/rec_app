@@ -5,6 +5,7 @@
 
 #include "pch.h"
 #include "backend.h"
+#include "kheventfilter.h"
 
 QWindow* windowRef;
 
@@ -30,8 +31,12 @@ int main(int argc, char *argv[])
     }, Qt::QueuedConnection);
     engine.load(url);
 
-    //    if( !(windowRef = qobject_cast<QWindow*>( engine.rootObjects().at(0)) ))
-    //        return -1;
+    if( !(windowRef = qobject_cast<QWindow*>( engine.rootObjects().at(0)) ))
+        return -1;
+
+    // This fucks up the debug
+
+    app.installNativeEventFilter(new KhEventFilter());
 
     return app.exec();
 }
