@@ -3,6 +3,7 @@
 #include <QThread>
 #include <QScreen>
 #include <QMutex>
+#include <QElapsedTimer>
 
 class CaptureThread : public QThread
 {
@@ -30,6 +31,10 @@ public:
         m_hwnd = value;
     }
 
+    void kick() {
+        m_timer.restart();
+    }
+
 private:
     QImage CaptureScreen();
     QImage CaptureWindow();
@@ -39,6 +44,7 @@ private:
     QScreen* screen;
     int m_shots_per_second;
     int m_recMode;
+    QElapsedTimer m_timer;
     //QMutex mux;
 
 signals:

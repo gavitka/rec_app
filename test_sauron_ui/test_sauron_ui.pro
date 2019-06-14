@@ -75,3 +75,5 @@ LIBS += -L..\build_dll\debug -ltest_sauron_hooks_dll
 PRECOMPILED_HEADER = pch.h
 
 QMAKE_LFLAGS += /NODEFAULTLIB:library
+
+DISTFILES +=

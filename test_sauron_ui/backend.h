@@ -81,6 +81,12 @@ public:
         refreshUI();
     }
 
+    void kick(){
+        if(m_thr != nullptr) {
+            m_thr->kick();
+        }
+    }
+
     /* <PROP> */
 
     QString outputText() {return m_output_text;}

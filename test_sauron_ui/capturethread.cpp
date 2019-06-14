@@ -5,6 +5,7 @@
 #include <QPixmap>
 #include <QWindow>
 #include <QDebug>
+#include <QPainter>
 
 #include "backend.h"
 #include "mousehook.h"
@@ -29,6 +30,8 @@ CaptureThread::CaptureThread(int shots_per_second):
         qDebug() << "Installing mouse hook";
         InstallMouseHook((HWND)windowRef->winId(), m_hwnd);
     }
+
+    m_timer.start();
 }
 
 CaptureThread::~CaptureThread()
@@ -53,9 +56,15 @@ void CaptureThread::run() {
         while(m_pause) {
             QThread::msleep(100);
         }
-//        qDebug() << "record mode:" << BackEnd::getInstance()->recordMode() << endl;
+        //        qDebug() << "record mode:" << BackEnd::getInstance()->recordMode() << endl;
+
         if(m_recMode == RECORD_MODE::Window) {
-            vc.AddFrame(CaptureWindow());
+            if (m_timer.elapsed() < 2000) {
+                vc.AddFrame(CaptureWindow());
+            }
+            else {
+                qDebug() << "Sleeping...." ;
+            }
         }
         else {
             vc.AddFrame(CaptureScreen());
@@ -72,13 +81,20 @@ void CaptureThread::run() {
 
 QImage CaptureThread::CaptureScreen() {
     QPixmap pixmap = screen->grabWindow(0);
+    QPixmap pixmap_cursor(":/cursor.png");
+    QPainter painter(&pixmap);
+    QPoint p = QCursor::pos();
+    painter.drawPixmap(p,pixmap_cursor);
     QImage image (pixmap.toImage());
     return image;
 }
 
-QImage CaptureThread::CaptureWindow()
-{
-    QPixmap pixmap = QPixmap::grabWindow((WId)m_hwnd);
+QImage CaptureThread::CaptureWindow() {
+    QPixmap pixmap = screen->grabWindow((WId)m_hwnd);
+    QPixmap pixmap_cursor(":/cursor.png");
+    QPainter painter(&pixmap);
+    QPoint p = QCursor::pos();
+    painter.drawPixmap(p,pixmap_cursor);
     QImage image (pixmap.toImage());
     return image;
 }

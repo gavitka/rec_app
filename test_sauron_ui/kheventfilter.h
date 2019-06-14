@@ -23,6 +23,7 @@ public:
             POINT mpt = msg->pt;
             BackEnd::getInstance()->setMouseX(mpt.x);
             BackEnd::getInstance()->setMouseY(mpt.y);
+            BackEnd::getInstance()->kick();
         }
         return false;
     }
