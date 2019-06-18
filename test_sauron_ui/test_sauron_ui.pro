@@ -1,5 +1,6 @@
 QT += quick
 QT += widgets
+QT += winextras
 CONFIG += c++11
 
 # The following define makes your compiler emit warnings if you use
@@ -17,7 +18,8 @@ SOURCES += \
         VideoCapture.cpp \
         backend.cpp \
         capturethread.cpp \
-        main.cpp
+        main.cpp \
+        perfomancetimer.cpp
 
 
 RESOURCES += qml.qrc
@@ -38,7 +40,8 @@ HEADERS += \
     backend.h \
     capturethread.h \
     kheventfilter.h \
-    pch.h
+    pch.h \
+    perfomancetimer.h
 
 LIBS += "C:\dev\lib\ffmpeg_prefix\lib\libavcodec.a"
 LIBS += "C:\dev\lib\ffmpeg_prefix\lib\libavutil.a"
@@ -72,8 +75,13 @@ INCLUDEPATH += C:\dev\lib\x264
 INCLUDEPATH += ..\test_sauron_hooks_dll
 LIBS += -L..\build_dll\debug -ltest_sauron_hooks_dll
 
-PRECOMPILED_HEADER = pch.h
+#PRECOMPILED_HEADER = pch.h
 
 QMAKE_LFLAGS += /NODEFAULTLIB:library
 
 DISTFILES +=
+
+msvc:release {
+    QMAKE_CXXFLAGS_RELEASE += /Zi
+    QMAKE_LFLAGS_RELEASE += /DEBUG
+}

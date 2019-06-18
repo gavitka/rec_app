@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.9.1, 2019-06-14T14:21:14. -->
+<!-- Written by QtCreator 4.9.1, 2019-06-17T20:01:19. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -113,7 +113,16 @@
       <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
       <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">ProjectExplorer.ProcessStep</value>
      </valuemap>
-     <value type="int" key="ProjectExplorer.BuildStepList.StepsCount">4</value>
+     <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.4">
+      <value type="bool" key="ProjectExplorer.BuildStep.Enabled">true</value>
+      <value type="QString" key="ProjectExplorer.ProcessStep.Arguments">debug\test_sauron_hooks_dll.dll &quot;%{buildDir}\..\build_app\profile\&quot; /Y</value>
+      <value type="QString" key="ProjectExplorer.ProcessStep.Command">xcopy</value>
+      <value type="QString" key="ProjectExplorer.ProcessStep.WorkingDirectory">%{buildDir}</value>
+      <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Custom Process Step</value>
+      <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
+      <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">ProjectExplorer.ProcessStep</value>
+     </valuemap>
+     <value type="int" key="ProjectExplorer.BuildStepList.StepsCount">5</value>
      <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Build</value>
      <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
      <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">ProjectExplorer.BuildSteps.Build</value>
@@ -169,7 +178,16 @@
       <value type="QString" key="Qt4ProjectManager.MakeStep.MakeCommand"></value>
       <value type="bool" key="Qt4ProjectManager.MakeStep.OverrideMakeflags">false</value>
      </valuemap>
-     <value type="int" key="ProjectExplorer.BuildStepList.StepsCount">2</value>
+     <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.2">
+      <value type="bool" key="ProjectExplorer.BuildStep.Enabled">true</value>
+      <value type="QString" key="ProjectExplorer.ProcessStep.Arguments">release\test_sauron_hooks_dll.dll &quot;%{buildDir}\..\build_app\release\&quot; /Y</value>
+      <value type="QString" key="ProjectExplorer.ProcessStep.Command">xcopy</value>
+      <value type="QString" key="ProjectExplorer.ProcessStep.WorkingDirectory">%{buildDir}</value>
+      <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Custom Process Step</value>
+      <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
+      <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">ProjectExplorer.ProcessStep</value>
+     </valuemap>
+     <value type="int" key="ProjectExplorer.BuildStepList.StepsCount">3</value>
      <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Build</value>
      <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
      <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">ProjectExplorer.BuildSteps.Build</value>

@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <string> 
 #include <QImage>
+#include <QByteArray>
 
 extern "C"
 {
@@ -122,6 +123,8 @@ private:
     SwsContext *swsCtx;
 
     const char* m_fname;
+    const char* m_tempfilename;
+    QByteArray ba;
 
     int frameCounter;
 

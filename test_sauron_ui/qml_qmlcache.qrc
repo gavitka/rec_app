@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<RCC>
+    <qresource prefix="/">
+        <file alias="cursor.png">cursor.png</file>
+    </qresource>
+</RCC>

@@ -4,7 +4,10 @@
 #define FINAL_FILE_NAME "record.mp4"
 
 #include "backend.h"
+#include "perfomancetimer.h"
 
+#include <QByteArray>
+#include <QDir>
 
 using namespace std;
 
@@ -12,14 +15,20 @@ void VideoCapture::Init(int width, int height, int fpsrate, int bitrate, const c
 
     fps = fpsrate;
     m_fname = filename;
+
+    QDir dir;
+    QString tmp_path = dir.tempPath() + "/tmp.h264";
+    ba = tmp_path.toLatin1();
+    m_tempfilename = ba.data();
+
     int err;
 
-    if (!(oformat = av_guess_format(nullptr, VIDEO_TMP_FILE, nullptr))) {
+    if (!(oformat = av_guess_format(nullptr, m_tempfilename, nullptr))) {
         fprintf(stderr,"Failed to define output format");
         return;
     }
 
-    if ((err = avformat_alloc_output_context2(&ofctx, oformat, nullptr, VIDEO_TMP_FILE) < 0)) {
+    if ((err = avformat_alloc_output_context2(&ofctx, oformat, nullptr, m_tempfilename) < 0)) {
         fprintf(stderr,"Failed to allocate output context");
         Free();
         return;
@@ -63,6 +72,8 @@ void VideoCapture::Init(int width, int height, int fpsrate, int bitrate, const c
     }
     avcodec_parameters_from_context(videoStream->codecpar, cctx);
 
+    BackEnd::getInstance()->addOutPutText("Opening codec\n");
+
     if ((err = avcodec_open2(cctx, codec, nullptr)) < 0) {
         fprintf(stderr,"Failed to open codec");
         Free();
@@ -70,7 +81,7 @@ void VideoCapture::Init(int width, int height, int fpsrate, int bitrate, const c
     }
 
     if (!(oformat->flags & AVFMT_NOFILE)) {
-        if ((err = avio_open(&ofctx->pb, VIDEO_TMP_FILE, AVIO_FLAG_WRITE)) < 0) {
+        if ((err = avio_open(&ofctx->pb, m_tempfilename, AVIO_FLAG_WRITE)) < 0) {
             fprintf(stderr,"Failed to open file");
             Free();
             return;
@@ -83,7 +94,7 @@ void VideoCapture::Init(int width, int height, int fpsrate, int bitrate, const c
         return;
     }
 
-    av_dump_format(ofctx, 0, VIDEO_TMP_FILE, 1);
+    av_dump_format(ofctx, 0, m_tempfilename, 1);
 }
 
 void VideoCapture::AddFrame(QImage image) {
@@ -111,7 +122,7 @@ void VideoCapture::AddFrame(QImage image) {
     }
 
     if (!swsCtx || reinitialize_context) {
-        swsCtx = sws_getContext(image.width(), image.height(), AV_PIX_FMT_RGBA, cctx->width, cctx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, nullptr, nullptr, nullptr);
+        swsCtx = sws_getContext(image.width(), image.height(), AV_PIX_FMT_BGRA, cctx->width, cctx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, nullptr, nullptr, nullptr);
     }
 
     //int inLinesize[1] = { 4 * cctx->width };
@@ -123,12 +134,14 @@ void VideoCapture::AddFrame(QImage image) {
     planes[0] = image.bits();
     sws_scale(swsCtx, planes, srcstride, 0, image.height(), videoFrame->data, videoFrame->linesize);
 
+    PerfomanceTimer::getInstance()->elapsed("sws_scale");
     //sws_scale(swsCtx, &data, inLinesize, 0, cctx->height, videoFrame->data, videoFrame->linesize);
 
     videoFrame->pts = frameCounter++;
 
     if ((err = avcodec_send_frame(cctx, videoFrame)) < 0) {
         fprintf(stderr,"Failed to send frame");
+        BackEnd::getInstance()->addOutPutText("Failed to send frame");
         return;
     }
 
@@ -142,6 +155,8 @@ void VideoCapture::AddFrame(QImage image) {
         av_interleaved_write_frame(ofctx, &pkt);
         av_packet_unref(&pkt);
     }
+
+    PerfomanceTimer::getInstance()->elapsed("encode_frame");
 }
 
 void VideoCapture::Finish() {
@@ -195,8 +210,9 @@ void VideoCapture::Remux() {
     AVFormatContext *ifmt_ctx = nullptr, *ofmt_ctx = nullptr;
     int err;
 
-    if ((err = avformat_open_input(&ifmt_ctx, VIDEO_TMP_FILE, nullptr, nullptr)) < 0) {
+    if ((err = avformat_open_input(&ifmt_ctx, m_tempfilename, nullptr, nullptr)) < 0) {
         fprintf(stderr,"Failed to open input file for remuxing");
+        qDebug() << "tempfilename" << m_tempfilename;
         goto end;
     }
     if ((err = avformat_find_stream_info(ifmt_ctx, nullptr)) < 0) {

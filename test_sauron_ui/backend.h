@@ -87,6 +87,11 @@ public:
         }
     }
 
+
+    void addOutPutText(QString text) {
+        setOutputText(outputText() + text);
+    }
+
     /* <PROP> */
 
     QString outputText() {return m_output_text;}
@@ -205,9 +210,6 @@ private:
     HWND m_hwnd;
     QSettings m_settings;
 
-    void addOutPutText(QString text) {
-        setOutputText(outputText() + text);
-    }
 
 
 };

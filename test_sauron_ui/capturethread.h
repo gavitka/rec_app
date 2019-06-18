@@ -1,9 +1,12 @@
 #pragma once
 
+#include "pch.h"
+
 #include <QThread>
 #include <QScreen>
 #include <QMutex>
 #include <QElapsedTimer>
+#include <QDebug>
 
 class CaptureThread : public QThread
 {
@@ -35,8 +38,11 @@ public:
         m_timer.restart();
     }
 
+    int FPS(){return m_currentFPS;}
+
 private:
     QImage CaptureScreen();
+    QImage CaptureScreen2();
     QImage CaptureWindow();
     bool m_stop;
     bool m_pause;
@@ -45,6 +51,8 @@ private:
     int m_shots_per_second;
     int m_recMode;
     QElapsedTimer m_timer;
+    qint64 m_shotToumeOut;
+    int m_currentFPS = 0;
     //QMutex mux;
 
 signals:

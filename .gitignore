@@ -18,3 +18,5 @@ libav/
 Trash/
 build_dll/
 build_app/
+/*.exe
+*.pro.user
