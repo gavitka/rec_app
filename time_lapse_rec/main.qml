@@ -5,7 +5,7 @@ import QtQuick.Controls 2.12
 import QtQuick.Controls.Universal 2.12
 import Qt.labs.settings 1.0
 import io.qt.examples.backend 1.0
-import io.qt.examples.enums 1.0
+//import io.qt.examples.enums 1.0
 import Theme 1.0
 import "Components"
 
@@ -23,11 +23,6 @@ Window {
         property alias y: wnd.y
         property alias width: wnd.width
         property alias height: wnd.height
-        //        property alias fileNameValue: fileName.text
-        //        property alias outWidthValue: outWidth.text
-        //        property alias outHeightalue: outHeight.text
-        //        property alias framesPerSecondValue: framesPerSecond.text
-        //        property alias shotsPerSecondValue: shotsPerSecond.text
     }
 
     ColumnLayout {
@@ -158,8 +153,7 @@ Window {
                     Label {
                         Layout.fillWidth: true
                         text: "Specify file prefix. All the recorder files will be named automatically using "
-                              + "this prefix. Specify file prefix. All the recorder files will be named automatically "
-                              + "using this prefix."
+                              + "this prefix."
                         color: "black"
                         wrapMode: Text.WordWrap
                     }
@@ -196,16 +190,10 @@ Window {
                     ComboBox{
                         id: framerateList
                         Layout.fillWidth: true
-                        textRole: "key"
-                        model: ListModel {
-                            id:frameRatesModel
-                            ListElement { key: "1x"; value: FRAMERATES.x1 }
-                            ListElement { key: "2x"; value: FRAMERATES.x2 }
-                            ListElement { key: "4x"; value: FRAMERATES.x4 }
-                            ListElement { key: "8x"; value: FRAMERATES.x8 }
-                            ListElement { key: "16x"; value: FRAMERATES.x16 }
-                        }
-                        onCurrentIndexChanged:BackEnd.setFrameRate(frameRatesModel.get(currentIndex).value)
+                        textRole: "name"
+                        model: BackEnd.frameRateList
+                        currentIndex: BackEnd.frameRateIndex
+                        onCurrentIndexChanged: BackEnd.frameRateIndex = currentIndex
                     }
                     Label {
                         Layout.fillWidth: true
@@ -223,14 +211,10 @@ Window {
                     ComboBox{
                         id:resolutionList
                         Layout.fillWidth: true
-                        textRole: "key"
-                        model: ListModel {
-                            id:resolutionsModel
-                            ListElement { key: "1080p"; value: RESOLUTIONS.res1080p }
-                            ListElement { key: "720p"; value: RESOLUTIONS.res720p }
-                            ListElement { key: "360p"; value: RESOLUTIONS.res360p }
-                        }
-                        onCurrentIndexChanged:BackEnd.setResolution(resolutionsModel.get(currentIndex).value)
+                        textRole: "name"
+                        model: BackEnd.resolutionList
+                        currentIndex: BackEnd.resolutionIndex
+                        onCurrentIndexChanged: BackEnd.resolutionIndex = currentIndex
                         enabled: BackEnd.lockParam
                     }
                     Label {
@@ -250,16 +234,10 @@ Window {
                     ComboBox{
                         id:bitrateListModel
                         Layout.fillWidth: true
-                        textRole: "key"
-                        model: ListModel {
-                            id:bitratesModel
-                            ListElement { key: "500 Kbps"; value: BITRATES.b500 }
-                            ListElement { key: "1500 Kbps"; value: BITRATES.b1500 }
-                            ListElement { key: "2000 Kbps"; value: BITRATES.b2000 }
-                            ListElement { key: "2500 Kbps"; value: BITRATES.b2500 }
-                            ListElement { key: "3000 Kbps"; value: BITRATES.b3000 }
-                        }
-                        onCurrentIndexChanged:BackEnd.setBitRate(bitratesModel.get(currentIndex).value)
+                        textRole: "name"
+                        model: BackEnd.bitRateList
+                        currentIndex: BackEnd.bitRateIndex
+                        onCurrentIndexChanged: BackEnd.bitRateIndex = currentIndex
                         enabled: BackEnd.lockParam
                     }
                     Label {
@@ -369,7 +347,6 @@ Window {
                         Layout.fillWidth: true
                         text: "If a window does not receive mouse input for 3 seconds." +
                               " Recording will pause until next time mouse is moved."
-                        font.pointSize: 12
                         color: "black"
                         wrapMode: Text.WordWrap
                     }

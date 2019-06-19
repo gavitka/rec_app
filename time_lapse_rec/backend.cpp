@@ -29,14 +29,14 @@ extern QWindow* wnd;
 
 BackEnd::BackEnd(QObject *parent) :
     QObject(parent),
-    m_thr(nullptr)
+    m_thr(nullptr),
+    m_settings("Gavitka software", "Time lapse recorder")
 {
     //    setOutWidth(1920/4); //deleteme
     //    setOutHeight(1200/4); //deleteme
     //    setFramesPerSecond(25); //deleteme
     //    setShotsPerSecond(3); //deleteme
     //    setOutFileName("c:/dev/rec_app/filename.mp4"); //deleteme
-
     m_framesPerSecond = 24;
     m_shotsPerSecond = 3;
 
@@ -45,12 +45,35 @@ BackEnd::BackEnd(QObject *parent) :
     m_filePrefix = "record";
     m_recordTimer = QElapsedTimer();
     m_elapsedTime = 0;
-    m_filePath = m_filePath.home();
+
+    setFilePath( m_settings.value("filePath").toString());
+    setFilePrefix(m_settings.value("filePrefix").toString());
+    setBitRateIndex(m_settings.value("bitRate").toInt());
+    setResolutionIndex(m_settings.value("resolution").toInt());
+    setFrameRateIndex(m_settings.value("frameRate").toInt());
+    m_recMode = m_settings.value("recMode").toInt();
+
+    m_resolutionList.append(new ListElement(RESOLUTIONS::res1080p, "1080p"));
+    m_resolutionList.append(new ListElement(RESOLUTIONS::res720p, "720p"));
+    m_resolutionList.append(new ListElement(RESOLUTIONS::res360p, "360p"));
+
+    m_bitRateList.append(new ListElement(BITRATES::b500, "500Kbps"));
+    m_bitRateList.append(new ListElement(BITRATES::b1500, "1500Kbps"));
+    m_bitRateList.append(new ListElement(BITRATES::b2000, "2000Kbps"));
+    m_bitRateList.append(new ListElement(BITRATES::b2500, "2500Kbps"));
+    m_bitRateList.append(new ListElement(BITRATES::b3000, "3000Kbps"));
+
+    m_frameRateList.append(new ListElement(FRAMERATES::x1, "1x"));
+    m_frameRateList.append(new ListElement(FRAMERATES::x2, "2x"));
+    m_frameRateList.append(new ListElement(FRAMERATES::x4, "4x"));
+    m_frameRateList.append(new ListElement(FRAMERATES::x8, "8x"));
+    m_frameRateList.append(new ListElement(FRAMERATES::x16, "16x"));
+
     m_imgpreview = QImage(300, 200, QImage::Format_RGBA8888);
     m_imgpreview.fill(qRgb(66, 66, 66));
     m_screen = QGuiApplication::primaryScreen();
     setImageSource("image://preview/");
-    m_recMode = RECORD_MODE::Window;
+    //m_recMode = RECORD_MODE::Window;
     m_sleepMode = true;
     if (wnd) m_screen = wnd->screen();
     refreshUI();
@@ -159,8 +182,9 @@ void BackEnd::setRecMode(bool value){
         m_recMode = RECORD_MODE::Screen;
     }
 
-    emit recModeChanged();
+    m_settings.setValue("recMode", m_recMode);
 
+    emit recModeChanged();
     refreshImage();
 }
 
@@ -196,62 +220,137 @@ void BackEnd::refreshImage()
     emit imageSourceChanged();
 }
 
-void BackEnd::setFrameRate(int i) {
-    switch(i) {
-    case FRAMERATES::en::x1:
-        m_shotsPerSecond = m_framesPerSecond / 1;
-        break;
-    case FRAMERATES::en::x2:
-        m_shotsPerSecond = m_framesPerSecond / 2;
-        break;
-    case FRAMERATES::en::x4:
-        m_shotsPerSecond = m_framesPerSecond / 4;
-        break;
-    case FRAMERATES::en::x8:
-        m_shotsPerSecond = m_framesPerSecond / 8;
-        break;
-    case FRAMERATES::en::x16:
-        m_shotsPerSecond = m_framesPerSecond / 16;
-        break;
-    }
-}
 
-void BackEnd::setBitRate(int i) {
-    switch(i) {
-    case BITRATES::en::b500:
-        m_bitRate = 500;
-        break;
-    case BITRATES::en::b1500:
-        m_bitRate = 1500;
-        break;
-    case BITRATES::en::b2000:
-        m_bitRate = 2000;
-        break;
-    case BITRATES::en::b2500:
-        m_bitRate = 2500;
-        break;
-    case BITRATES::en::b3000:
-        m_bitRate = 3000;
-        break;
-    }
-}
-
-void BackEnd::setResolution(int i) {
-    switch(i) {
-    case RESOLUTIONS::en::res360p:
+void BackEnd::setResolutionIndex(int value) {
+    m_resolutionIndex = value;
+    switch(value) {
+    case RESOLUTIONS::res360p:
         m_width = 480;
         m_height = 360;
         break;
-    case RESOLUTIONS::en::res720p:
+    case RESOLUTIONS::res720p:
         m_width = 1280;
         m_height = 720;
         break;
-    case RESOLUTIONS::en::res1080p:
+    case RESOLUTIONS::res1080p:
         m_width = 1920;
         m_height = 1080;
         break;
     }
+    m_settings.setValue("resolution", value);
+    emit resolutionIndexChanged();
 }
+
+void BackEnd::setBitRateIndex(int value) {
+    m_bitRateIndex = value;
+    switch(value) {
+    case BITRATES::b500:
+        m_bitRate = 500;
+        break;
+    case BITRATES::b1500:
+        m_bitRate = 1500;
+        break;
+    case BITRATES::b2000:
+        m_bitRate = 2000;
+        break;
+    case BITRATES::b2500:
+        m_bitRate = 2500;
+        break;
+    case BITRATES::b3000:
+        m_bitRate = 3000;
+        break;
+    }
+    m_settings.setValue("bitRate", value);
+    emit bitRateIndexChanged();
+}
+
+void BackEnd::setFrameRateIndex(int value) {
+    m_frameRateIndex = value;
+    switch(value) {
+    case FRAMERATES::x1:
+        m_shotsPerSecond = m_framesPerSecond / 1;
+        break;
+    case FRAMERATES::x2:
+        m_shotsPerSecond = m_framesPerSecond / 2;
+        break;
+    case FRAMERATES::x4:
+        m_shotsPerSecond = m_framesPerSecond / 4;
+        break;
+    case FRAMERATES::x8:
+        m_shotsPerSecond = m_framesPerSecond / 8;
+        break;
+    case FRAMERATES::x16:
+        m_shotsPerSecond = m_framesPerSecond / 16;
+        break;
+    }
+    m_settings.setValue("frameRate", value);
+    qDebug() << "m_frameRateIndex" << m_frameRateIndex;
+    emit frameRateIndexChanged();
+}
+
+
+//void BackEnd::setFrameRate(int i) {
+//    if(!i) i = 1;
+//    switch(i) {
+//    case FRAMERATES::x1:
+//        m_shotsPerSecond = m_framesPerSecond / 1;
+//        break;
+//    case FRAMERATES::x2:
+//        m_shotsPerSecond = m_framesPerSecond / 2;
+//        break;
+//    case FRAMERATES::x4:
+//        m_shotsPerSecond = m_framesPerSecond / 4;
+//        break;
+//    case FRAMERATES::x8:
+//        m_shotsPerSecond = m_framesPerSecond / 8;
+//        break;
+//    case FRAMERATES::x16:
+//        m_shotsPerSecond = m_framesPerSecond / 16;
+//        break;
+//    }
+//    m_settings.setValue("frameRate", i);
+//}
+
+//void BackEnd::setBitRate(int i) {
+//    if(!i) i = 1;
+//    switch(i) {
+//    case BITRATES::b500:
+//        m_bitRate = 500;
+//        break;
+//    case BITRATES::b1500:
+//        m_bitRate = 1500;
+//        break;
+//    case BITRATES::b2000:
+//        m_bitRate = 2000;
+//        break;
+//    case BITRATES::b2500:
+//        m_bitRate = 2500;
+//        break;
+//    case BITRATES::b3000:
+//        m_bitRate = 3000;
+//        break;
+//    }
+//    m_settings.setValue("bitRate", i);
+//}
+
+//void BackEnd::setResolution(int i) {
+//    if(!i) i = 1;
+//    switch(i) {
+//    case RESOLUTIONS::res360p:
+//        m_width = 480;
+//        m_height = 360;
+//        break;
+//    case RESOLUTIONS::res720p:
+//        m_width = 1280;
+//        m_height = 720;
+//        break;
+//    case RESOLUTIONS::res1080p:
+//        m_width = 1920;
+//        m_height = 1080;
+//        break;
+//    }
+//    m_settings.setValue("resolution", i);
+//}
 
 //void BackEnd::setOutFileName(QString value){
 //    if(value.right(4) != ".mp4") {

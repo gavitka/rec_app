@@ -25,9 +25,9 @@ int main(int argc, char *argv[])
 
     qmlRegisterSingletonType<BackEnd>("io.qt.examples.backend", 1, 0, "BackEnd", &BackEnd::qmlInstance);
 
-    BITRATES::declareQML();
-    FRAMERATES::declareQML();
-    RESOLUTIONS::declareQML();
+//    BITRATES::declareQML();
+//    FRAMERATES::declareQML();
+//    RESOLUTIONS::declareQML();
 
     engine.addImageProvider("preview", new PreviewImageProvider);
 
