@@ -7,8 +7,11 @@ Button {
     width:50
     height:height
     id:rootId
+    //toggled: true
 
-    state: rootId.down ? "pressed" : rootId.hovered ? "hover" : "default"
+    property bool buttonToggled: false
+
+    state: rootId.down || buttonToggled ? "pressed" : rootId.hovered ? "hover" : "default"
 
     contentItem:
         Item {

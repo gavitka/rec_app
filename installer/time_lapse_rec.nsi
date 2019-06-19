@@ -30,7 +30,7 @@ InstallDir "$PROGRAMFILES64\${COMPANYNAME}\${APPNAME}"
 LicenseData "license.rtf"
 # This will be in the installer/uninstaller's title bar
 Name "${APPNAME}"
-# Icon "logo.ico"
+Icon "logo.ico"
 outFile "../rec_app-installer.win-x64.exe"
  
 !include LogicLib.nsh

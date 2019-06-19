@@ -13,8 +13,9 @@ class CaptureThread : public QThread
     Q_OBJECT
 
 public:
-    CaptureThread(int shots_per_second);
+    CaptureThread();
     ~CaptureThread();
+
     void run();
     void Stop() {
         if(isPaused()) togglepause();
@@ -40,19 +41,28 @@ public:
 
     int FPS(){return m_currentFPS;}
 
+    static QImage CaptureScreen(QScreen* screen);
+    static QImage CaptureScreen2(QScreen* screen);
+    static QImage CaptureWindow(QScreen* screen, HWND hwnd);
+
 private:
-    QImage CaptureScreen();
-    QImage CaptureScreen2();
-    QImage CaptureWindow();
     bool m_stop;
     bool m_pause;
     HWND m_hwnd;
-    QScreen* screen;
+    QScreen* m_screen;
     int m_shots_per_second;
     int m_recMode;
     QElapsedTimer m_timer;
-    qint64 m_shotToumeOut;
+    qint64 m_shotTimeOut;
     int m_currentFPS = 0;
+
+    int m_width;
+    int m_height;
+    int m_fps;
+    int m_bitRate;
+
+    QByteArray m_filenameb;
+    const char* m_filename;
     //QMutex mux;
 
 signals:

@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/">
+        <file>imports/Theme/qmldir</file>
+        <file>imports/Theme/Theme.qml</file>
+        <file>images/cursor.png</file>
+        <file>images/pause_icon.png</file>
+        <file>images/record_icon.png</file>
+        <file>Components/PauseButton.qml</file>
+        <file>Components/RecButton.qml</file>
+        <file>main.qml</file>
+        <file>images/square_icon.png</file>
+        <file>Components/OpenFolderDialog.qml</file>
+    </qresource>
+</RCC>

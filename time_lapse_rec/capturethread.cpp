@@ -12,26 +12,34 @@
 #include "mousehook.h"
 #include "perfomancetimer.h"
 
-extern QWindow* windowRef;
+extern QWindow* wnd;
 
-CaptureThread::CaptureThread(int shots_per_second):
+CaptureThread::CaptureThread():
     m_stop (false),
-    m_pause (false),
-    m_shots_per_second (shots_per_second)
+    m_pause (false)
 {
-    screen = QGuiApplication::primaryScreen();
-    if (windowRef)
-        screen = windowRef->screen();
+    m_screen = QGuiApplication::primaryScreen();
+    if (wnd)
+        m_screen = wnd->screen();
+
+    m_shots_per_second = BackEnd::getInstance()->shotsPerSecond();
+    m_shotTimeOut = static_cast<int>(1000/m_shots_per_second);
 
     m_currentFPS = m_shots_per_second;
-    m_shotToumeOut = static_cast<int>(1000/m_shots_per_second);
-
+    m_fps = BackEnd::getInstance()->framesPerSecond();
+    m_width = BackEnd::getInstance()->getWidth();
+    m_height = BackEnd::getInstance()->getHeight();
     m_recMode = BackEnd::getInstance()->recordMode();
     m_hwnd = BackEnd::getInstance()->getHwnd();
+    m_bitRate = BackEnd::getInstance()->bitRate();
+
+    QString s = BackEnd::getInstance()->fileName();
+    qDebug() << "filename from BackEnd" << s;
+    m_filenameb = BackEnd::getInstance()->fileName().toLatin1();
+    m_filename = m_filenameb.data();
 
     if(m_recMode == RECORD_MODE::Window) {
-        // qDebug() << "Installing mouse hook";
-        InstallMouseHook((HWND)windowRef->winId(), m_hwnd);
+        InstallMouseHook((HWND)wnd->winId(), m_hwnd);
     }
 
     m_timer.start();
@@ -39,22 +47,13 @@ CaptureThread::CaptureThread(int shots_per_second):
 
 CaptureThread::~CaptureThread()
 {
+    //delete m_filename;
     RemoveHooks();
 }
 
 void CaptureThread::run() {
-
-    int w, h, fps;
-    const char* fpussy;
-
-    w = BackEnd::getInstance()->outWidth();
-    h = BackEnd::getInstance()->outHeight();
-    fps = BackEnd::getInstance()->framesPerSecond();
-    QByteArray ba = BackEnd::getInstance()->outFileName().toLatin1();
-    fpussy = ba.data();
-
     VideoCapture vc;
-    vc.Init(w, h, fps, 2500, fpussy);
+    vc.Init(m_width, m_height, m_fps, 2500, m_filename);
     while (true) {
         QElapsedTimer timer;
         timer.start();
@@ -64,23 +63,19 @@ void CaptureThread::run() {
         }
         if(m_recMode == RECORD_MODE::Window) {
             if (m_timer.elapsed() < 2000) {
-                BackEnd::getInstance()->addOutPutText("Recording Frame\n");
-                vc.AddFrame(CaptureWindow());
+                vc.AddFrame(CaptureThread::CaptureWindow(m_screen, m_hwnd));
             }
             else {
                 qDebug() << "Sleeping...." ;
             }
         }
         else {
-            BackEnd::getInstance()->addOutPutText("Recording Frame\n");
-            vc.AddFrame(CaptureScreen());
+            vc.AddFrame(CaptureThread::CaptureScreen(m_screen));
         }
         if(m_stop) {
             break;
         }
-        //        qDebug() << "Shot timeout:" << m_shotToumeOut
-        //                 << "Elapsed time:" << timer.elapsed();
-        qint64 remainingTime = m_shotToumeOut - timer.elapsed();
+        qint64 remainingTime = m_shotTimeOut - timer.elapsed();
         if(remainingTime > 0) {
             QThread::msleep(remainingTime);
             m_currentFPS = m_shots_per_second;
@@ -88,7 +83,6 @@ void CaptureThread::run() {
         else {
             m_currentFPS = (int) 1000 / timer.elapsed();
         }
-        //        qDebug() << "Remaining Time " << remainingTime;
         qDebug() << "FPS:" << m_currentFPS;
     }
     vc.Finish();
@@ -97,10 +91,10 @@ void CaptureThread::run() {
     emit CaptureThread::resultReady();
 }
 
-QImage CaptureThread::CaptureScreen() {
+QImage CaptureThread::CaptureScreen(QScreen* screen) {
     QPixmap pixmap = screen->grabWindow(0);
     PerfomanceTimer::getInstance()->elapsed("Sreenshot_grabbing");
-    QPixmap pixmap_cursor(":/cursor.png");
+    QPixmap pixmap_cursor("qrc:/images/cursor.png");
     QPainter painter(&pixmap);
     QPoint p = QCursor::pos();
     painter.drawPixmap(p,pixmap_cursor);
@@ -110,9 +104,9 @@ QImage CaptureThread::CaptureScreen() {
     return image;
 }
 
-QImage CaptureThread::CaptureWindow() {
-    QPixmap pixmap = screen->grabWindow((WId)m_hwnd);
-    QPixmap pixmap_cursor(":/cursor.png");
+QImage CaptureThread::CaptureWindow(QScreen* screen, HWND hwnd) {
+    QPixmap pixmap = screen->grabWindow((WId)hwnd);
+    QPixmap pixmap_cursor("qrc:/images/cursor.png");
     QPainter painter(&pixmap);
     QPoint p = QCursor::pos();
     painter.drawPixmap(p,pixmap_cursor);
@@ -120,7 +114,7 @@ QImage CaptureThread::CaptureWindow() {
     return image;
 }
 
-QImage CaptureThread::CaptureScreen2(){
+QImage CaptureThread::CaptureScreen2(QScreen* screen){
     // get the device context of the screen
     const wchar_t* dcName = L"DISPLAY";
 

@@ -7,13 +7,15 @@ Button {
     height:width
     id: rootId
 
+    property bool isRecording: false
+
     state: rootId.down ? "pressed" : rootId.hovered ? "hover" : "default"
 
     contentItem:
         Item {
         Image {
             anchors.centerIn: parent
-            source: "qrc:/images/record_icon.png"
+            source: !rootId.isRecording ? "qrc:/images/record_icon.png" : "qrc:/images/square_icon.png"
         }
     }
 

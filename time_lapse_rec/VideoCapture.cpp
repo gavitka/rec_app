@@ -72,8 +72,6 @@ void VideoCapture::Init(int width, int height, int fpsrate, int bitrate, const c
     }
     avcodec_parameters_from_context(videoStream->codecpar, cctx);
 
-    BackEnd::getInstance()->addOutPutText("Opening codec\n");
-
     if ((err = avcodec_open2(cctx, codec, nullptr)) < 0) {
         fprintf(stderr,"Failed to open codec");
         Free();
@@ -141,7 +139,6 @@ void VideoCapture::AddFrame(QImage image) {
 
     if ((err = avcodec_send_frame(cctx, videoFrame)) < 0) {
         fprintf(stderr,"Failed to send frame");
-        BackEnd::getInstance()->addOutPutText("Failed to send frame");
         return;
     }
 

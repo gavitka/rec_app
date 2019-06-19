@@ -7,7 +7,7 @@
 #include "backend.h"
 #include "kheventfilter.h"
 
-QWindow* windowRef;
+QWindow* wnd;
 
 int main(int argc, char *argv[])
 {
@@ -21,7 +21,15 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
 
+    engine.addImportPath(":/imports");
+
     qmlRegisterSingletonType<BackEnd>("io.qt.examples.backend", 1, 0, "BackEnd", &BackEnd::qmlInstance);
+
+    BITRATES::declareQML();
+    FRAMERATES::declareQML();
+    RESOLUTIONS::declareQML();
+
+    engine.addImageProvider("preview", new PreviewImageProvider);
 
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
@@ -31,7 +39,7 @@ int main(int argc, char *argv[])
     }, Qt::QueuedConnection);
     engine.load(url);
 
-    if( !(windowRef = qobject_cast<QWindow*>( engine.rootObjects().at(0)) ))
+    if( !(wnd = qobject_cast<QWindow*>( engine.rootObjects().at(0)) ))
         return -1;
 
     // This fucks up the debug
