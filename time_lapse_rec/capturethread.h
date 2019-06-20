@@ -8,6 +8,9 @@
 #include <QElapsedTimer>
 #include <QDebug>
 
+
+#include "backend.h"
+
 class CaptureThread : public QThread
 {
     Q_OBJECT
@@ -45,15 +48,27 @@ public:
     static QImage CaptureScreen2(QScreen* screen);
     static QImage CaptureWindow(QScreen* screen, HWND hwnd);
 
+    qint64 getShotTimeout(){
+        return (1000 / getShotsPerSecond());
+    }
+
+    int getShotsPerSecond(){
+        return BackEnd::getInstance()->shotsPerSecond();
+    }
+
+    qint64 getRemainingTime() {
+
+    }
+
 private:
     bool m_stop;
     bool m_pause;
     HWND m_hwnd;
     QScreen* m_screen;
-    int m_shots_per_second;
+    //int m_shots_per_second;
+    //qint64 m_shotTimeOut;
     int m_recMode;
     QElapsedTimer m_timer;
-    qint64 m_shotTimeOut;
     int m_currentFPS = 0;
 
     int m_width;

@@ -21,6 +21,8 @@ public:
         MSG* msg = (MSG*)(message);
         if(msg->message == WM_KEYSTROKE) {
             POINT mpt = msg->pt;
+            BackEnd::getInstance()->setMouseX(mpt.x);
+            BackEnd::getInstance()->setMouseY(mpt.y);
             BackEnd::getInstance()->kick();
         }
         return false;

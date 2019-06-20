@@ -12,10 +12,12 @@
 #include <QTimer>
 #include <QDir>
 #include <QImage>
+#include <QDebug>
 #include <QQuickImageProvider>
 #include <QRandomGenerator>
+#include <QElapsedTimer>
 
-#include"capturethread.h"
+class CaptureThread;
 
 enum RECORD_STATUS{
     Idle,
@@ -60,14 +62,15 @@ class BackEnd : public QObject
     //    Q_PROPERTY(int shotsPerSecond READ shotsPerSecond WRITE setShotsPerSecond NOTIFY shotsPerSecondChanged) //deleteme
     //    Q_PROPERTY(QString outFileName READ outFileName WRITE setOutFileName NOTIFY outFileNameChanged) //deleteme
     Q_PROPERTY(QList<QObject*> windowList READ windowList NOTIFY windowListChanged)
-    //    Q_PROPERTY(int mouseX READ mouseX WRITE setMouseX NOTIFY mouseXChanged)
-    //    Q_PROPERTY(int mouseY READ mouseY WRITE setMouseX NOTIFY mouseYChanged)
+    Q_PROPERTY(int mouseX READ mouseX WRITE setMouseX NOTIFY mouseXChanged)
+    Q_PROPERTY(int mouseY READ mouseY WRITE setMouseX NOTIFY mouseYChanged)
     Q_PROPERTY(bool recMode READ recMode WRITE setRecMode NOTIFY recModeChanged)
     Q_PROPERTY(QString filePrefix READ filePrefix WRITE setFilePrefix NOTIFY filePrefixChanged)
     Q_PROPERTY(QString recordingState READ recordingState NOTIFY recordingStateChanged)
     Q_PROPERTY(QString recordingTime READ recordingTime NOTIFY recordingTimeChanged)
     Q_PROPERTY(QString filePath READ filePath WRITE setFilePathUrl NOTIFY filePathChanged)
-    Q_PROPERTY(QString fileUrl READ fileUrl NOTIFY fileUrlChanged)
+    Q_PROPERTY(QString fileUrl READ fileUrl NOTIFY filePathChanged)
+    Q_PROPERTY(QString fileLabel READ fileLabel NOTIFY filePathChanged)
     Q_PROPERTY(QString imageSource READ imageSource WRITE setImageSource NOTIFY imageSourceChanged)
     Q_PROPERTY(bool sleepMode READ sleepMode WRITE setSleepMode NOTIFY sleepModeChanged)
 
@@ -77,6 +80,8 @@ class BackEnd : public QObject
     Q_PROPERTY(int bitRateIndex READ bitRateIndex WRITE setBitRateIndex NOTIFY bitRateIndexChanged)
     Q_PROPERTY(QList<QObject*> frameRateList READ frameRateList NOTIFY frameRateListChanged)
     Q_PROPERTY(int frameRateIndex READ frameRateIndex WRITE setFrameRateIndex NOTIFY frameRateIndexChanged)
+    Q_PROPERTY(QString statusLine READ statusLine NOTIFY statusLineChanged)
+    Q_PROPERTY(bool recordReady READ recordReady NOTIFY recordReadyChanged)
 
 public:
 
@@ -101,21 +106,17 @@ public:
     BackEnd(QObject *parent = nullptr);
     ~BackEnd();
 
-    void kick() {
-        if(m_thr != nullptr) {
-            m_thr->kick();
-        }
-    }
+    void kick();
 
     // ----------------- <PROP>  -----------------
 
     QString startButtonText();
 
-    //    int mouseX(){return m_mousex;}
-    //    void setMouseX(int value){m_mousex = value; emit mouseXChanged();}
+    int mouseX(){return m_mousex;}
+    void setMouseX(int value){m_mousex = value; emit mouseXChanged();}
 
-    //    int mouseY(){return m_mousey;}
-    //    void setMouseY(int value){m_mousey = value; emit mouseYChanged();}
+    int mouseY(){return m_mousey;}
+    void setMouseY(int value){m_mousey = value; emit mouseYChanged();}
 
     //    int outWidth(){return m_outWidth;}
     //    void setOutWidth(int value){
@@ -233,6 +234,12 @@ public:
         return filename;
     }
 
+    QString fileLabel() {
+        QString s = "<a href=\"" + fileUrl() + "\">" + filePath() + "</a>";
+        qDebug().noquote() << "Hyperlink" << s;
+        return s;
+    }
+
     bool checkfilename(QString filename){
         QFile f(filename);
         return f.exists();
@@ -248,6 +255,7 @@ public:
     bool sleepMode() {return m_sleepMode;}
     void setSleepMode(bool value) {
         m_sleepMode = value;
+        m_settings.setValue("sleepMode", value);
         emit sleepModeChanged();
     }
 
@@ -269,6 +277,25 @@ public:
 
     int frameRateIndex() {return m_frameRateIndex;}
     void setFrameRateIndex(int value);
+
+    QString statusLine() {
+        QString s;
+        QFileInfo d(fileName());
+        //if(recordStatus() == RECORD_STATUS::Rec || recordStatus() == RECORD_STATUS::Rec || )
+        s = "Current File: " + d.fileName();
+        return s;
+    }
+
+    bool recordReady() {
+        qDebug() << "Recording ready test " << (m_hwnd == nullptr);
+
+        if(recordMode() == RECORD_MODE::Screen)
+            return true;
+        if(recordMode() == RECORD_MODE::Window && getHwnd() != nullptr)
+            return true;
+
+        return false;
+    }
 
     // ----------------- </PROP>  -----------------
 
@@ -299,14 +326,14 @@ signals:
     //    void outFileNameChanged(); //deleteme
     void lockParamChanged();
     void windowListChanged();
-    //    void mouseXChanged();
-    //    void mouseYChanged();
+    void mouseXChanged();
+    void mouseYChanged();
     void recModeChanged();
     void filePrefixChanged();
     void recordingStateChanged();
     void recordingTimeChanged();
     void filePathChanged();
-    void fileUrlChanged();
+    //void fileUrlChanged();
     void imageSourceChanged();
     void sleepModeChanged();
     void resolutionListChanged();
@@ -315,6 +342,8 @@ signals:
     void frameRateIndexChanged();
     void bitRateIndexChanged();
     void resolutionIndexChanged();
+    void statusLineChanged();
+    void recordReadyChanged();
 
 public slots:
 
@@ -328,9 +357,9 @@ public slots:
     void timerUpdate() {
         emit recordingTimeChanged();
     }
-//    void setResolution(int i);
-//    void setBitRate(int i);
-//    void setFrameRate(int i);
+    //    void setResolution(int i);
+    //    void setBitRate(int i);
+    //    void setFrameRate(int i);
     QScreen* getScreen(){return m_screen;}
 
 private:
@@ -340,8 +369,8 @@ private:
     CaptureThread* m_thr;
     int m_width;
     int m_height;
-    //    int m_mousex;
-    //    int m_mousey;
+    int m_mousex;
+    int m_mousey;
     int m_framesPerSecond;
     int m_shotsPerSecond;
     bool m_lockParam;
@@ -457,7 +486,7 @@ public:
 class ListElement : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
-    public:
+public:
     ListElement(int i, QString v) :
         QObject(),
         index(i),
@@ -470,9 +499,9 @@ class ListElement : public QObject {
         m_name = value;
         emit nameChanged();
     }
-    signals:
+signals:
     void nameChanged();
-    private:
+private:
     int index;
     QString m_name;
 };

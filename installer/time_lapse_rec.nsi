@@ -7,9 +7,9 @@
 # If you change the names "app.exe", "logo.ico", or "license.rtf" you should do a search and replace - they
 # show up in a few places.
 # All the other settings can be tweaked by editing the !defines at the top of this script
-!define APPNAME "Rec_app"
+!define APPNAME "Time lapse rec"
 !define COMPANYNAME "Gavitka Software"
-!define DESCRIPTION "A simple reference app for artists."
+!define DESCRIPTION "Time lapse recording applicaion."
 # These three must be integers
 !define VERSIONMAJOR 1
 !define VERSIONMINOR 0
@@ -31,7 +31,7 @@ LicenseData "license.rtf"
 # This will be in the installer/uninstaller's title bar
 Name "${APPNAME}"
 Icon "logo.ico"
-outFile "../rec_app-installer.win-x64.exe"
+outFile "../tlrec-installer.win-x64.exe"
  
 !include LogicLib.nsh
 !include "x64.nsh"
@@ -89,7 +89,7 @@ section "install"
  
  	# Start Menu
 	createDirectory "$SMPROGRAMS\${COMPANYNAME}"
-	createShortCut "$SMPROGRAMS\${COMPANYNAME}\${APPNAME}.lnk" "$INSTDIR\test_sauron_ui.exe" "" "$INSTDIR\logo.ico"
+	createShortCut "$SMPROGRAMS\${COMPANYNAME}\${APPNAME}.lnk" "$INSTDIR\time_lapse_rec.exe" "" "$INSTDIR\logo.ico"
  
 	# Registry information for add/remove programs
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME}"

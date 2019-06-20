@@ -44,6 +44,7 @@ Window {
                             id:recbutton
                             anchors.fill: parent
                             height:width
+                            enabled: BackEnd.recordReady
                             onClicked: {
                                 if(!isRecording) {
                                     BackEnd.startRecording()
@@ -88,7 +89,7 @@ Window {
                         Label {
                             color: "white"
                             font.pointSize: 10
-                            text: "Status: good"
+                            text: BackEnd.statusLine
                         }
                     }
                 }
@@ -120,23 +121,32 @@ Window {
                     Label {
                         Layout.fillWidth: true
                         text: "Folder path"
-                        font.pointSize: 16
-                        font.weight: Font.DemiBold
-                        color: "black"
+                        font.pointSize: 14
                     }
                     Label {
                         Layout.fillWidth: true
                         text: "Select folder to store recorded files."
-                        color: "black"
+                        font.pointSize: 10
                         wrapMode: Text.WordWrap
                     }
-                    Label {
+//                    Label {
+//                        Layout.fillWidth: true
+//                        id:filePath
+//                        text: BackEnd.filePath
+//                        font.pointSize: 14
+//                        elide: Text.ElideMiddle
+//                    }
+                    Text {
                         Layout.fillWidth: true
-                        id:filePath
+                        id:fileLabel
                         text: BackEnd.filePath
-                        font.pointSize: 16
-                        color: "black"
+                        font.pointSize: 14
                         elide: Text.ElideMiddle
+                        MouseArea{
+                            anchors.fill:parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: Qt.openUrlExternally(BackEnd.fileUrl)
+                        }
                     }
                     Button {
                         text: "Browse"
@@ -146,15 +156,13 @@ Window {
                     Label {
                         Layout.fillWidth: true
                         text: "File prefix"
-                        font.pointSize: 16
-                        font.weight: Font.DemiBold
-                        color: "black"
+                        font.pointSize: 14
                     }
                     Label {
                         Layout.fillWidth: true
                         text: "Specify file prefix. All the recorder files will be named automatically using "
                               + "this prefix."
-                        color: "black"
+                        font.pointSize: 10
                         wrapMode: Text.WordWrap
                     }
                     TextField {
@@ -177,14 +185,12 @@ Window {
                     Label {
                         Layout.fillWidth: true
                         text: "Frame rate"
-                        font.pointSize: 16
-                        font.weight: Font.DemiBold
-                        color: "black"
+                        font.pointSize: 14
                     }
                     Label {
                         Layout.fillWidth: true
                         text: "Select time lapse speed up recording factor."
-                        color: "black"
+                        font.pointSize: 10
                         wrapMode: Text.WordWrap
                     }
                     ComboBox{
@@ -198,14 +204,12 @@ Window {
                     Label {
                         Layout.fillWidth: true
                         text: "Resolution"
-                        font.pointSize: 16
-                        font.weight: Font.DemiBold
-                        color: "black"
+                        font.pointSize: 14
                     }
                     Label {
                         Layout.fillWidth: true
                         text: "Select output file dimensions."
-                        color: "black"
+                        font.pointSize: 10
                         wrapMode: Text.WordWrap
                     }
                     ComboBox{
@@ -221,14 +225,12 @@ Window {
                         Layout.fillWidth: true
                         text: "Bitrate"
                         font.family: "Segoe UI"
-                        font.pointSize: 16
-                        font.weight: Font.DemiBold
-                        color: "black"
+                        font.pointSize: 14
                     }
                     Label {
                         Layout.fillWidth: true
                         text: "Select bitrate of hte file."
-                        color: "black"
+                        font.pointSize: 10
                         wrapMode: Text.WordWrap
                     }
                     ComboBox{
@@ -252,32 +254,17 @@ Window {
                     Label {
                         Layout.fillWidth: true
                         text: "Source"
-                        font.pointSize: 16
-                        font.weight: Font.DemiBold
-                        color: "black"
+                        font.pointSize: 14
                     }
                     Label {
                         Layout.fillWidth: true
                         text: "Select window to record window, screen to record whole screen area."
-                        color: "black"
+                        font.pointSize: 10
                         wrapMode: Text.WordWrap
                     }
                     GridLayout{
                         Layout.fillWidth: true
                         columns: 2
-                        RadioButton {
-                            width: 20
-                            checked: BackEnd.recMode ? true : false
-                            enabled: BackEnd.lockParam
-                            onCheckedChanged: checked ? BackEnd.recMode = true : BackEnd.recMode = false
-                        }
-                        Label{
-                            Layout.fillWidth: true
-                            text: "Screen"
-                            font.pointSize: 16
-                            font.weight: Font.DemiBold
-                            color: "black"
-                        }
                         RadioButton {
                             width: 20
                             checked: BackEnd.recMode ? false : true
@@ -286,39 +273,49 @@ Window {
                         }
                         Label{
                             Layout.fillWidth: true
+                            text: "Screen"
+                            font.pointSize: 14
+                        }
+                        RadioButton {
+                            width: 20
+                            checked: BackEnd.recMode ? true : false
+                            enabled: BackEnd.lockParam
+                            onCheckedChanged: checked ? BackEnd.recMode = true : BackEnd.recMode = false
+                        }
+                        Label{
+                            Layout.fillWidth: true
                             text: "Window"
-                            font.pointSize: 16
-                            font.weight: Font.DemiBold
-                            color: "black"
+                            font.pointSize: 14
                         }
                     }
                     /* ----- */
                     Label {
                         Layout.fillWidth: true
                         text: "Window"
-                        font.pointSize: 16
-                        font.weight: Font.DemiBold
-                        color: "black"
-                        visible: !BackEnd.recMode
+                        font.pointSize: 14
+                        visible: BackEnd.recMode
                     }
                     Label {
                         Layout.fillWidth: true
                         text: "Select window to record."
-                        color: "black"
+                        font.pointSize: 10
                         wrapMode: Text.WordWrap
-                        visible: !BackEnd.recMode
+                        visible: BackEnd.recMode
                     }
-                    ComboBox{
-                        id:windowList
-                        Layout.fillWidth: true
-                        model:BackEnd.windowList
-                        textRole: "name"
-                        //onActiveFocusChanged: BackEnd.getWindowsList()
-                        //onActivated: BackEnd.getWindowsList()
-                        onVisibleChanged: BackEnd.getWindowsList()
-                        enabled: BackEnd.lockParam
-                        onCurrentIndexChanged:BackEnd.setWindow(currentIndex)
-                        visible: !BackEnd.recMode
+                    RowLayout{
+                        visible: BackEnd.recMode
+                        ComboBox{
+                            id:windowList
+                            Layout.fillWidth: true
+                            model:BackEnd.windowList
+                            textRole: "name"
+                            enabled: BackEnd.lockParam
+                            onCurrentIndexChanged:BackEnd.setWindow(currentIndex)
+                        }
+                        Button{
+                            text: "Refresh"
+                            onClicked: BackEnd.getWindowsList()
+                        }
                     }
                     /* ----- */
                     Rectangle {
@@ -339,30 +336,29 @@ Window {
                     Label {
                         Layout.fillWidth: true
                         text: "Sleep when idle"
-                        font.pointSize: 16
-                        font.weight: Font.DemiBold
-                        color: "black"
+                        font.pointSize: 14
                     }
                     Label {
                         Layout.fillWidth: true
                         text: "If a window does not receive mouse input for 3 seconds." +
                               " Recording will pause until next time mouse is moved."
-                        color: "black"
+                        font.pointSize: 10
                         wrapMode: Text.WordWrap
                     }
                     RowLayout{
                         Layout.fillWidth: true
                         Switch {
+                            id:sleepMode
                             width: 20
-                            enabled: BackEnd.lockParam
+                            //enabled: BackEnd.lockParam
                             checked: BackEnd.sleepMode
+                            onCheckedChanged: BackEnd.sleepMode = checked
                         }
                         Label {
                             Layout.fillWidth: true
-                            text: "On"
+                            text: sleepMode.checked ? "On" : "Off"
                             font.pointSize: 16
                             font.weight: Font.DemiBold
-                            color: "black"
                         }
                     }
                 }

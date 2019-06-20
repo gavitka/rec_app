@@ -23,6 +23,8 @@
 
 #include <QThread>
 
+#include "capturethread.h"
+
 BackEnd* BackEnd::m_instance = nullptr;
 
 extern QWindow* wnd;
@@ -30,6 +32,7 @@ extern QWindow* wnd;
 BackEnd::BackEnd(QObject *parent) :
     QObject(parent),
     m_thr(nullptr),
+    m_hwnd(nullptr),
     m_settings("Gavitka software", "Time lapse recorder")
 {
     //    setOutWidth(1920/4); //deleteme
@@ -37,6 +40,7 @@ BackEnd::BackEnd(QObject *parent) :
     //    setFramesPerSecond(25); //deleteme
     //    setShotsPerSecond(3); //deleteme
     //    setOutFileName("c:/dev/rec_app/filename.mp4"); //deleteme
+    // m_hwnd = nullptr
     m_framesPerSecond = 24;
     m_shotsPerSecond = 3;
 
@@ -52,6 +56,7 @@ BackEnd::BackEnd(QObject *parent) :
     setResolutionIndex(m_settings.value("resolution").toInt());
     setFrameRateIndex(m_settings.value("frameRate").toInt());
     m_recMode = m_settings.value("recMode").toInt();
+    setSleepMode(m_settings.value("sleepMode").toBool());
 
     m_resolutionList.append(new ListElement(RESOLUTIONS::res1080p, "1080p"));
     m_resolutionList.append(new ListElement(RESOLUTIONS::res720p, "720p"));
@@ -74,7 +79,7 @@ BackEnd::BackEnd(QObject *parent) :
     m_screen = QGuiApplication::primaryScreen();
     setImageSource("image://preview/");
     //m_recMode = RECORD_MODE::Window;
-    m_sleepMode = true;
+    //m_sleepMode = true;
     if (wnd) m_screen = wnd->screen();
     refreshUI();
 }
@@ -82,6 +87,12 @@ BackEnd::BackEnd(QObject *parent) :
 BackEnd::~BackEnd()
 {
     delete m_screen;
+}
+
+void BackEnd::kick() {
+    if(m_thr != nullptr) {
+        m_thr->kick();
+    }
 }
 
 QString BackEnd::startButtonText() {
@@ -185,6 +196,7 @@ void BackEnd::setRecMode(bool value){
     m_settings.setValue("recMode", m_recMode);
 
     emit recModeChanged();
+    emit recordReadyChanged();
     refreshImage();
 }
 
@@ -204,17 +216,19 @@ qint64 BackEnd::getElapsedTime()
 {
     if(recordStatus() == RECORD_STATUS::Pause) {
         return m_elapsedTime;
-    } else {
+    } else if (recordStatus() == RECORD_STATUS::Rec) {
         return m_elapsedTime + m_recordTimer.elapsed();
+    } else {
+        return 0;
     }
 }
 
 void BackEnd::refreshImage()
 {
     if(recMode() == RECORD_MODE::Window) {
-        m_imgpreview = CaptureThread::CaptureScreen(m_screen);
-    } else {
         m_imgpreview = CaptureThread::CaptureWindow(m_screen, m_hwnd);
+    } else {
+        m_imgpreview = CaptureThread::CaptureScreen(m_screen);
     }
 
     emit imageSourceChanged();
@@ -439,6 +453,7 @@ void BackEnd::setWindow(int index)
     setImageSource("image://preview/");
     //setRecordMode(RECORD_MODE::Window);
     qDebug() << "HWND selected: " << currentWindow->getHwnd();
+    emit recordReadyChanged();
 }
 
 QString int2str(int i) {
