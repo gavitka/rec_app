@@ -1,6 +1,7 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.12
 import QtQuick.Layouts 1.12
+import Theme 1.0
 
 Button {
     id:rootId
@@ -21,7 +22,7 @@ Button {
 
     background: Rectangle {
         id:backgroundRect
-        color:"#3D2732"
+        color: Theme.background_color
         anchors.fill: parent
     }
 
@@ -30,21 +31,21 @@ Button {
             name: "hover"
             PropertyChanges {
                 target: backgroundRect
-                color: "#594851"
+                color: Theme.button_color
             }
         },
         State {
             name: "pressed"
             PropertyChanges {
                 target: backgroundRect
-                color: "#6D6167"
+                color: "white"
             }
         },
         State {
             name: "default"
             PropertyChanges {
                 target: backgroundRect
-                color: "#3D2732"
+                color: Theme.background_color
             }
         }
     ]

@@ -30,7 +30,7 @@ InstallDir "$PROGRAMFILES64\${COMPANYNAME}\${APPNAME}"
 LicenseData "license.rtf"
 # This will be in the installer/uninstaller's title bar
 Name "${APPNAME}"
-Icon "logo.ico"
+Icon "../time_lapse_rec/images/logo.ico"
 outFile "../tlrec-installer.win-x64.exe"
  
 !include LogicLib.nsh

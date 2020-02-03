@@ -100,7 +100,6 @@ public:
         return m_instance;
     }
 
-
     // ----------------- </SINGLETON>  -----------------
 
     BackEnd(QObject *parent = nullptr);

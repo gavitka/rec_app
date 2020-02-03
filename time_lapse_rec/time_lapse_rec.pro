@@ -80,12 +80,15 @@ LIBS += -L..\build_dll\release -lhooks_dll
 
 QMAKE_LFLAGS += /NODEFAULTLIB:library
 
-DISTFILES =
+DISTFILES = \
+    Components/TopButton.qml
 
 msvc:release {
     QMAKE_CXXFLAGS_RELEASE += /Zi
     QMAKE_LFLAGS_RELEASE += /DEBUG
 }
+
+RC_ICONS = images\logo.ico
 
 RESOURCES += \
     qml.qrc

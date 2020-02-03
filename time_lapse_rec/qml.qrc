@@ -11,5 +11,8 @@
         <file>images/square_icon.png</file>
         <file>Components/OpenFolderDialog.qml</file>
         <file>Components/TopButton.qml</file>
+        <file>images/close.png</file>
+        <file>images/minimize.png</file>
+        <file>images/logo.ico</file>
     </qresource>
 </RCC>

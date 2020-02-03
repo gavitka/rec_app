@@ -17,7 +17,9 @@ Window {
     minimumWidth: 500
     title: qsTr("Time lapse recording app")
     id:wnd
-
+    //flags: Qt.Window | Qt.FramelessWindowHint
+    // Qt.MSWindowsFixedSizeDialogHint
+    // Qt.WindowStaysOnTopHint
     Settings {
         property alias x: wnd.x
         property alias y: wnd.y
@@ -33,6 +35,46 @@ Window {
                 implicitWidth: wnd.width
                 implicitHeight: 200
                 color: Theme.background_color
+
+                /*MouseArea {
+                    anchors.fill: parent
+                    property point lastMousePos: Qt.point(0, 0)
+                    onPressed: { lastMousePos = Qt.point(mouseX, mouseY); }
+                    onMouseXChanged: wnd.x += (mouseX - lastMousePos.x)
+                    onMouseYChanged: wnd.y += (mouseY - lastMousePos.y)
+                }
+
+                RowLayout{
+                    anchors.top: parent.top
+                    anchors.right: parent.right
+                    TopButton {
+                        Layout.rightMargin: 2
+                        Layout.bottomMargin: 2
+                        Layout.topMargin: 0
+                        text:""
+                        Image {
+                            width:13
+                            height:13
+                            anchors.centerIn: parent
+                            source: "images/minimize.png"
+                        }
+                        onClicked: wnd.visibility = Window.Minimized
+                    }
+                    TopButton {
+                        Layout.rightMargin: 2
+                        Layout.bottomMargin: 2
+                        Layout.topMargin: 0
+                        text:""
+                        Image {
+                            width:13
+                            height:13
+                            anchors.centerIn: parent
+                            source: "images/close.png"
+                        }
+                        onClicked: wnd.close()
+                    }
+                }*/
+
                 RowLayout {
                     spacing: 30
                     width: 350
