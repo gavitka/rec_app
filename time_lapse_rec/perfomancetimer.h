@@ -20,6 +20,7 @@ public:
     static PerfomanceTimer* getInstance() {
         if(!m_instance) {
             m_instance = new PerfomanceTimer();
+            m_instance->reset();
         }
         return m_instance;
     }
@@ -52,7 +53,7 @@ public:
         QMapIterator<QString, PerfomanceTimerPoint> i(m_points);
         while (i.hasNext()) {
             i.next();
-            qDebug() << i.value().index << " " << i.key() << " avg: " << i.value().avgTime << endl;
+            //qDebug() << i.value().index << " " << i.key() << " avg: " << i.value().avgTime << endl;
         }
     }
 

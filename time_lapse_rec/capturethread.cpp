@@ -22,19 +22,18 @@ CaptureThread::CaptureThread():
     if (wnd)
         m_screen = wnd->screen();
 
-//    m_shots_per_second = BackEnd::getInstance()->shotsPerSecond();
-//    m_shotTimeOut = static_cast<int>(1000/m_shots_per_second);
-
     m_currentFPS = getShotsPerSecond();
     m_fps = BackEnd::getInstance()->framesPerSecond();
     m_width = BackEnd::getInstance()->getWidth();
     m_height = BackEnd::getInstance()->getHeight();
+    m_cropmode = BackEnd::getInstance()->cropIndex();
+    m_asp = (qreal)m_width/m_height;
     m_recMode = BackEnd::getInstance()->recordMode();
     m_hwnd = BackEnd::getInstance()->getHwnd();
     m_bitRate = BackEnd::getInstance()->bitRate();
 
     QString s = BackEnd::getInstance()->fileName();
-    qDebug() << "filename from BackEnd" << s;
+
     m_filenameb = BackEnd::getInstance()->fileName().toLatin1();
     m_filename = m_filenameb.data();
 
@@ -61,17 +60,25 @@ void CaptureThread::run() {
             QThread::msleep(100);
         }
         if(m_recMode == RECORD_MODE::Window) {
-            qDebug() << "m_recMode" <<  m_recMode;
-            qDebug() << "RECORD_MODE::Window" << RECORD_MODE::Window;
             if (m_timer.elapsed() < 3000 || !BackEnd::getInstance()->sleepMode()) {
-                vc.AddFrame(CaptureThread::CaptureWindow(m_screen, m_hwnd));
+                if(IsWindow(m_hwnd)) {
+                    QImage img2 = fixAspectRatio(CaptureThread::CaptureWindow(m_screen, m_hwnd));
+                    PerfomanceTimer::getInstance()->elapsed("Image_crop");
+                    vc.AddFrame(img2);
+                } else {
+                    if(m_stop == false) {
+                        emit errorHappened();
+                    }
+                }
             }
             else {
-                qDebug() << "Sleeping...." ;
+                //qDebug() << "Sleeping...." ;
             }
         }
         else {
-            vc.AddFrame(CaptureThread::CaptureScreen(m_screen));
+            QImage img2 = fixAspectRatio(CaptureThread::CaptureScreen(m_screen));
+            PerfomanceTimer::getInstance()->elapsed("Image_crop");
+            vc.AddFrame(img2);
         }
         if(m_stop) {
             break;
@@ -84,7 +91,7 @@ void CaptureThread::run() {
         else {
             m_currentFPS = (int) 1000 / timer.elapsed();
         }
-        qDebug() << "FPS:" << m_currentFPS;
+        //qDebug() << "FPS:" << m_currentFPS;
     }
     vc.Finish();
 
@@ -98,7 +105,8 @@ QImage CaptureThread::CaptureScreen(QScreen* screen) {
     QPixmap pixmap_cursor(":/images/cursor.png");
     QPainter painter(&pixmap);
     QPoint p = QCursor::pos();
-    qDebug() << "cur" << p;
+    p.setX(p.x() - 32);
+    p.setY(p.y() - 32);
     painter.drawPixmap(p,pixmap_cursor);
     PerfomanceTimer::getInstance()->elapsed("Draw_cursor");
     QImage image (pixmap.toImage());
@@ -108,15 +116,34 @@ QImage CaptureThread::CaptureScreen(QScreen* screen) {
 
 QImage CaptureThread::CaptureWindow(QScreen* screen, HWND hwnd) {
     QPixmap pixmap = screen->grabWindow((WId)hwnd);
+    QCursor cur(Qt::ArrowCursor);// = w.cursor();
     QPixmap pixmap_cursor(":/images/cursor.png");
     QPainter painter(&pixmap);
     QPoint p = QCursor::pos();
+    RECT rect;
+    GetWindowRect(hwnd, &rect);
+    p.setX(p.x() - rect.left - 32);
+    p.setY(p.y() - rect.top - 32);
     painter.drawPixmap(p,pixmap_cursor);
     QImage image (pixmap.toImage());
     return image;
 }
 
-QImage CaptureThread::CaptureScreen2(QScreen* screen){
+QImage CaptureThread::fixAspectRatio(QImage img) {
+    // Possible but not major performance loss here
+    m_cropmode = BackEnd::getInstance()->cropIndex();
+    qreal asp2 = (qreal)img.width()/img.height();
+    if((asp2 > m_asp) ^ (m_cropmode == CROP_MODE::Crop)) {
+        int newheight = (int)img.width()/m_asp;
+        return img.copy(0, (img.height() - newheight)/2, img.width(), newheight);
+    }
+    else {
+        int newwidth = (int)img.height()*m_asp;
+        return img.copy( (img.width() - newwidth) / 2, 0, newwidth, img.height());
+    }
+}
+
+QImage CaptureThread::CaptureScreen2(QScreen* screen) {
     // get the device context of the screen
     const wchar_t* dcName = L"DISPLAY";
 

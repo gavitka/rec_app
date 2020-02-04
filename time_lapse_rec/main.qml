@@ -36,45 +36,6 @@ Window {
                 implicitHeight: 200
                 color: Theme.background_color
 
-                /*MouseArea {
-                    anchors.fill: parent
-                    property point lastMousePos: Qt.point(0, 0)
-                    onPressed: { lastMousePos = Qt.point(mouseX, mouseY); }
-                    onMouseXChanged: wnd.x += (mouseX - lastMousePos.x)
-                    onMouseYChanged: wnd.y += (mouseY - lastMousePos.y)
-                }
-
-                RowLayout{
-                    anchors.top: parent.top
-                    anchors.right: parent.right
-                    TopButton {
-                        Layout.rightMargin: 2
-                        Layout.bottomMargin: 2
-                        Layout.topMargin: 0
-                        text:""
-                        Image {
-                            width:13
-                            height:13
-                            anchors.centerIn: parent
-                            source: "images/minimize.png"
-                        }
-                        onClicked: wnd.visibility = Window.Minimized
-                    }
-                    TopButton {
-                        Layout.rightMargin: 2
-                        Layout.bottomMargin: 2
-                        Layout.topMargin: 0
-                        text:""
-                        Image {
-                            width:13
-                            height:13
-                            anchors.centerIn: parent
-                            source: "images/close.png"
-                        }
-                        onClicked: wnd.close()
-                    }
-                }*/
-
                 RowLayout {
                     spacing: 30
                     width: 350
@@ -87,14 +48,13 @@ Window {
                             anchors.fill: parent
                             height:width
                             enabled: BackEnd.recordReady
+                            isRecording: BackEnd.isRecording
                             onClicked: {
                                 if(!isRecording) {
                                     BackEnd.startRecording()
-                                    isRecording = true
                                 }
                                 else {
                                     BackEnd.stopRecording()
-                                    isRecording = false
                                 }
                             }
                         }
@@ -171,13 +131,6 @@ Window {
                         font.pointSize: 10
                         wrapMode: Text.WordWrap
                     }
-//                    Label {
-//                        Layout.fillWidth: true
-//                        id:filePath
-//                        text: BackEnd.filePath
-//                        font.pointSize: 14
-//                        elide: Text.ElideMiddle
-//                    }
                     Text {
                         Layout.fillWidth: true
                         id:fileLabel
@@ -265,6 +218,26 @@ Window {
                     }
                     Label {
                         Layout.fillWidth: true
+                        text: "Crop or fill"
+                        font.pointSize: 14
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: "Select whether to crop video or to add black rectangles to conform video to aspect ratio."
+                        font.pointSize: 10
+                        wrapMode: Text.WordWrap
+                    }
+                    ComboBox{
+                        id:cropList
+                        Layout.fillWidth: true
+                        textRole: "name"
+                        model: BackEnd.cropList
+                        currentIndex: BackEnd.cropIndex
+                        onCurrentIndexChanged: BackEnd.cropIndex = currentIndex
+                        //enabled: BackEnd.lockParam
+                    }
+                    Label {
+                        Layout.fillWidth: true
                         text: "Bitrate"
                         font.family: "Segoe UI"
                         font.pointSize: 14
@@ -336,6 +309,7 @@ Window {
                         text: "Window"
                         font.pointSize: 14
                         visible: BackEnd.recMode
+
                     }
                     Label {
                         Layout.fillWidth: true
@@ -344,22 +318,32 @@ Window {
                         wrapMode: Text.WordWrap
                         visible: BackEnd.recMode
                     }
-                    RowLayout{
-                        visible: BackEnd.recMode
+//                    RowLayout{
                         ComboBox{
+                            visible: BackEnd.recMode
                             id:windowList
                             Layout.fillWidth: true
                             model:BackEnd.windowList
                             textRole: "name"
                             enabled: BackEnd.lockParam
-                            onCurrentIndexChanged:BackEnd.setWindow(currentIndex)
+                            Binding { target: BackEnd
+                                property: "windowIndex"
+                                value: windowList.currentIndex
+                            }
+                            Binding { target: windowList
+                                property: "currentIndex"
+                                value: BackEnd.windowIndex
+                            }
+                            onPressedChanged: {
+                                BackEnd.getWindowsList()
+                            }
                         }
-                        Button{
-                            text: "Refresh"
-                            onClicked: BackEnd.getWindowsList()
-                        }
-                    }
-                    /* ----- */
+//                        Button{
+//                            text: "Refresh"
+//                            onClicked: BackEnd.getWindowsList()
+//                        }
+//                    }
+                    /* --  -- */
                     Rectangle {
                         Layout.margins: 10
                         Layout.alignment: Qt.AlignCenter

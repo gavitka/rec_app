@@ -35,12 +35,6 @@ BackEnd::BackEnd(QObject *parent) :
     m_hwnd(nullptr),
     m_settings("Gavitka software", "Time lapse recorder")
 {
-    //    setOutWidth(1920/4); //deleteme
-    //    setOutHeight(1200/4); //deleteme
-    //    setFramesPerSecond(25); //deleteme
-    //    setShotsPerSecond(3); //deleteme
-    //    setOutFileName("c:/dev/rec_app/filename.mp4"); //deleteme
-    // m_hwnd = nullptr
     m_framesPerSecond = 24;
     m_shotsPerSecond = 3;
 
@@ -54,6 +48,7 @@ BackEnd::BackEnd(QObject *parent) :
     setFilePrefix(m_settings.value("filePrefix").toString());
     setBitRateIndex(m_settings.value("bitRate").toInt());
     setResolutionIndex(m_settings.value("resolution").toInt());
+    setCropIndex(m_settings.value("crop").toInt());
     setFrameRateIndex(m_settings.value("frameRate").toInt());
     m_recMode = m_settings.value("recMode").toInt();
     setSleepMode(m_settings.value("sleepMode").toBool());
@@ -61,6 +56,9 @@ BackEnd::BackEnd(QObject *parent) :
     m_resolutionList.append(new ListElement(RESOLUTIONS::res1080p, "1080p"));
     m_resolutionList.append(new ListElement(RESOLUTIONS::res720p, "720p"));
     m_resolutionList.append(new ListElement(RESOLUTIONS::res360p, "360p"));
+
+    m_cropList.append(new ListElement(CROP_MODE::Crop, "Crop"));
+    m_cropList.append(new ListElement(CROP_MODE::Fill, "Fill"));
 
     m_bitRateList.append(new ListElement(BITRATES::b500, "500Kbps"));
     m_bitRateList.append(new ListElement(BITRATES::b1500, "1500Kbps"));
@@ -77,9 +75,11 @@ BackEnd::BackEnd(QObject *parent) :
     m_imgpreview = QImage(300, 200, QImage::Format_RGBA8888);
     m_imgpreview.fill(qRgb(66, 66, 66));
     m_screen = QGuiApplication::primaryScreen();
+
+    m_windowName = m_settings.value("windowName").toString();
+    getWindowsList();
+
     setImageSource("image://preview/");
-    //m_recMode = RECORD_MODE::Window;
-    //m_sleepMode = true;
     if (wnd) m_screen = wnd->screen();
     refreshUI();
 }
@@ -115,6 +115,7 @@ void BackEnd::startRecording() {
         // filename
         // framerate
         connect(m_thr, &CaptureThread::resultReady, this, &BackEnd::handleResults);
+        connect(m_thr, &CaptureThread::errorHappened, this, &BackEnd::handleError);
         m_thr->start();
         setRecordStatus(RECORD_STATUS::Rec);
     }
@@ -151,19 +152,20 @@ void BackEnd::stopRecording() {
     }
 }
 
-void BackEnd::handleResults()
-{
+void BackEnd::handleResults() {
     delete m_thr;
     QString value = m_outFileName;
 }
 
-void BackEnd::refreshUI()
-{
-    emit lockParamChanged();
-    //    emit stopEnabledChanged();
-    //    emit startButtonTextChanged();
+void BackEnd::handleError() {
+    stopRecording();
 }
 
+void BackEnd::refreshUI() {
+    emit lockParamChanged();
+    emit statusLineChanged();
+    emit recordingTimeChanged();
+}
 
 bool BackEnd::lockParam(){
     if (recordStatus() == RECORD_STATUS::Idle) {
@@ -175,17 +177,16 @@ bool BackEnd::lockParam(){
 }
 
 bool BackEnd::recMode(){
-    //    qDebug() << "Get Rec Mode: " << m_recMode << endl;
-    if(m_recMode == RECORD_MODE::Window){
+    if(m_recMode == RECORD_MODE::Window) {
         return true;
     }
-    else{
+    else {
         return false;
     }
 }
 
-void BackEnd::setRecMode(bool value){
-    qDebug() << "Set Rec Mode: " << value << endl;
+void BackEnd::setRecMode(bool value) {
+    //qDebug() << "Set Rec Mode: " << value << endl;
     if(value == true) {
         m_recMode = RECORD_MODE::Window;
     }
@@ -209,7 +210,12 @@ QString BackEnd::recordingTime() {
     sec = sec % 60;
     hour = floor(min / 60);
     min = min % 60;
-    return "Recording time: " + QString("%1:%2:%3").arg(int2str(hour)).arg(int2str(min)).arg(int2str(sec));
+    if(t > 0) {
+        return "Recording time: " + QString("%1:%2:%3").arg(int2str(hour)).arg(int2str(min)).arg(int2str(sec));
+    }
+    else {
+        return "";
+    }
 }
 
 qint64 BackEnd::getElapsedTime()
@@ -217,7 +223,10 @@ qint64 BackEnd::getElapsedTime()
     if(recordStatus() == RECORD_STATUS::Pause) {
         return m_elapsedTime;
     } else if (recordStatus() == RECORD_STATUS::Rec) {
-        return m_elapsedTime + m_recordTimer.elapsed();
+        if(m_recordTimer.isValid()) {
+            return m_elapsedTime + m_recordTimer.elapsed();
+        }
+        else return 0;
     } else {
         return 0;
     }
@@ -233,7 +242,6 @@ void BackEnd::refreshImage()
 
     emit imageSourceChanged();
 }
-
 
 void BackEnd::setResolutionIndex(int value) {
     m_resolutionIndex = value;
@@ -253,6 +261,12 @@ void BackEnd::setResolutionIndex(int value) {
     }
     m_settings.setValue("resolution", value);
     emit resolutionIndexChanged();
+}
+
+void BackEnd::setCropIndex(int value) {
+    m_cropIndex = value;
+    m_settings.setValue("crop", value);
+    emit cropIndexChanged();
 }
 
 void BackEnd::setBitRateIndex(int value) {
@@ -298,132 +312,21 @@ void BackEnd::setFrameRateIndex(int value) {
         break;
     }
     m_settings.setValue("frameRate", value);
-    qDebug() << "m_frameRateIndex" << m_frameRateIndex;
     emit frameRateIndexChanged();
 }
 
-
-//void BackEnd::setFrameRate(int i) {
-//    if(!i) i = 1;
-//    switch(i) {
-//    case FRAMERATES::x1:
-//        m_shotsPerSecond = m_framesPerSecond / 1;
-//        break;
-//    case FRAMERATES::x2:
-//        m_shotsPerSecond = m_framesPerSecond / 2;
-//        break;
-//    case FRAMERATES::x4:
-//        m_shotsPerSecond = m_framesPerSecond / 4;
-//        break;
-//    case FRAMERATES::x8:
-//        m_shotsPerSecond = m_framesPerSecond / 8;
-//        break;
-//    case FRAMERATES::x16:
-//        m_shotsPerSecond = m_framesPerSecond / 16;
-//        break;
-//    }
-//    m_settings.setValue("frameRate", i);
-//}
-
-//void BackEnd::setBitRate(int i) {
-//    if(!i) i = 1;
-//    switch(i) {
-//    case BITRATES::b500:
-//        m_bitRate = 500;
-//        break;
-//    case BITRATES::b1500:
-//        m_bitRate = 1500;
-//        break;
-//    case BITRATES::b2000:
-//        m_bitRate = 2000;
-//        break;
-//    case BITRATES::b2500:
-//        m_bitRate = 2500;
-//        break;
-//    case BITRATES::b3000:
-//        m_bitRate = 3000;
-//        break;
-//    }
-//    m_settings.setValue("bitRate", i);
-//}
-
-//void BackEnd::setResolution(int i) {
-//    if(!i) i = 1;
-//    switch(i) {
-//    case RESOLUTIONS::res360p:
-//        m_width = 480;
-//        m_height = 360;
-//        break;
-//    case RESOLUTIONS::res720p:
-//        m_width = 1280;
-//        m_height = 720;
-//        break;
-//    case RESOLUTIONS::res1080p:
-//        m_width = 1920;
-//        m_height = 1080;
-//        break;
-//    }
-//    m_settings.setValue("resolution", i);
-//}
-
-//void BackEnd::setOutFileName(QString value){
-//    if(value.right(4) != ".mp4") {
-//        value = value + ".mp4";
-//    }
-//    QFileInfo fi(value);
-//    QString fname = fi.fileName();
-//    QDir dir = fi.dir();
-//    if(QFileInfo::exists(value)) {
-//        while(QFileInfo::exists(value))
-//        {
-//            // (.*)\_?(\d)+\.(\w+)
-//            QRegularExpression re("(.*?)\\_?(\\d*)\\.(\\w+)");
-//            QRegularExpressionMatch match = re.match(fname);
-//            if(match.hasMatch()) {
-//                QString num = match.captured(2);
-//                int inum = num.toInt();
-//                fname = match.captured(1)+"_"+ QString::number(inum + 1) +
-//                        "." + match.captured(3);
-//                value = dir.absolutePath() + QDir::separator() + fname;
-//                fi = QFileInfo(value);
-//            }
-//            else {
-//                value = dir.absolutePath() + QDir::separator() + fname;
-//                break;
-//            }
-//        }
-//    }
-//    else {
-//        if(!dir.exists()) {
-//            qDebug() << "Folder not exists" << value << endl;
-//            value = "";
-//        }
-//        else {
-//            // [^!?<>:/\|"*\/] - windows banned characters
-//            // !?<>:|\"* -> !?<>:|\\\\"*
-//            QRegularExpression re("!?<>:|\\\"*\\\\\\/");
-//            QRegularExpressionMatch match = re.match(value);
-//            if (match.hasMatch()) {
-//                qDebug() << "Wrong filename" << value << endl;
-//                value = "";
-//            }
-//            value = fi.absoluteDir().absolutePath() + "\\" + fname;
-//        }
-//    }
-//    if (value.isEmpty() && m_outFileName.isEmpty()) {
-//        value = QDir::home().absolutePath() + "\\record.mp4";
-//    }
-//    if(!value.isEmpty()) {
-//        m_outFileName = value;
-//    }
-//    emit outFileNameChanged();
-//}
-
-void BackEnd::getWindowsList()
-{
+void BackEnd::getWindowsList() {
     m_dataList.clear();
     EnumWindows(getWindowsListCallback, reinterpret_cast<LPARAM>(&m_dataList));
+    int index = 0;
+    for(int i = 0; i < m_dataList.length(); ++i) {
+        if( ((WindowObject*)m_dataList.value(i))->name() == m_windowName) {
+            index = i;
+            break;
+        }
+    }
     emit windowListChanged();
+    setWindowIndex(index);
 }
 
 BOOL CALLBACK getWindowsListCallback(HWND hwnd, LPARAM lParam) {
@@ -444,16 +347,33 @@ BOOL CALLBACK getWindowsListCallback(HWND hwnd, LPARAM lParam) {
     return TRUE;
 }
 
-void BackEnd::setWindow(int index)
-{
+void BackEnd::setWindowIndex(int index) {
+    if(m_dataList.isEmpty()) return;
+    if (index >= m_dataList.length()) return;
     WindowObject* currentWindow = (WindowObject*)m_dataList.at(index);
+    m_windowIndex = index;
+    m_windowName = currentWindow->name();
+    m_settings.setValue("windowName", m_windowName);
     HWND hwnd = currentWindow->getHwnd();
     m_hwnd = hwnd;
     refreshImage();
     setImageSource("image://preview/");
-    //setRecordMode(RECORD_MODE::Window);
-    qDebug() << "HWND selected: " << currentWindow->getHwnd();
+    emit windowIndexChanged();
     emit recordReadyChanged();
+}
+
+QString BackEnd::filePrefix() {return m_filePrefix;}
+
+void BackEnd::setFilePrefix(QString value) {
+    if (value.right(1) == "_") {
+        value = value.left(value.length()-1);
+    }
+    if(value.isEmpty()) {
+        value = "prefix";
+    }
+    m_filePrefix = value;
+    m_settings.setValue("filePrefix", m_filePrefix);
+    emit filePrefixChanged();
 }
 
 QString int2str(int i) {

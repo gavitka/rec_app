@@ -113,6 +113,7 @@ void VideoCapture::AddFrame(QImage image) {
 
     bool reinitialize_context = false;
 
+    // If somebody resized window
     if(image.width() != lastimagewidth || image.height() != lastimageheight){
         reinitialize_context = true;
         lastimagewidth = image.width();
@@ -120,7 +121,7 @@ void VideoCapture::AddFrame(QImage image) {
     }
 
     if (!swsCtx || reinitialize_context) {
-        swsCtx = sws_getContext(image.width(), image.height(), AV_PIX_FMT_BGRA, cctx->width, cctx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, nullptr, nullptr, nullptr);
+        swsCtx = sws_getContext(image.width(), image.height()-0, AV_PIX_FMT_BGRA, cctx->width, cctx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, nullptr, nullptr, nullptr);
     }
 
     //int inLinesize[1] = { 4 * cctx->width };
@@ -130,7 +131,9 @@ void VideoCapture::AddFrame(QImage image) {
     srcstride[0] = image.width()*4;
     const uchar* planes[1];
     planes[0] = image.bits();
-    sws_scale(swsCtx, planes, srcstride, 0, image.height(), videoFrame->data, videoFrame->linesize);
+    sws_scale(swsCtx, planes, srcstride, 0, image.height()-0, videoFrame->data, videoFrame->linesize);
+    // crops image bottom sws_scale(swsCtx, planes, srcstride, 100, image.height()-100, videoFrame->data, videoFrame->linesize);
+    // add -100 to context and get bottom_cropping
 
     PerfomanceTimer::getInstance()->elapsed("sws_scale");
     //sws_scale(swsCtx, &data, inLinesize, 0, cctx->height, videoFrame->data, videoFrame->linesize);

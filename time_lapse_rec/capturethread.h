@@ -60,6 +60,8 @@ public:
 
     }
 
+    QImage fixAspectRatio(QImage img);
+
 private:
     bool m_stop;
     bool m_pause;
@@ -73,8 +75,10 @@ private:
 
     int m_width;
     int m_height;
+    qreal m_asp;
     int m_fps;
     int m_bitRate;
+    int m_cropmode;
 
     QByteArray m_filenameb;
     const char* m_filename;
@@ -82,5 +86,6 @@ private:
 
 signals:
     void resultReady();
+    void errorHappened();
 
 };
