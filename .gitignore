@@ -21,3 +21,7 @@ build_app/
 /*.exe
 
 #*.pro.user
+
+/build/
+
+CMakeLists.txt.user
