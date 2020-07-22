@@ -2,24 +2,18 @@
 
 #include "pch.h"
 
-#include <QObject>
 #include <QAbstractListModel>
 #include <QVector>
-#include <QDebug>
 
-struct App {
-    QString name;
-    HWND hWnd;
-    bool selected = false;
-};
+#include "applist.h"
 
 class AppListModel : public QAbstractListModel
 {
     Q_OBJECT
 
-public:
+    Q_PROPERTY(AppList* appList WRITE setAppList)
 
-    Q_PROPERTY(int curIndex READ curIndex WRITE setCurIndex NOTIFY curIndexChanged)
+public:
 
     enum AppRoles {
         TextRole = Qt::UserRole + 1,
@@ -34,29 +28,14 @@ public:
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
 
-    int curIndex() {return m_curIndex;}
-    void setCurIndex(int value) {
-        m_curIndex = value;
-        emit curIndexChanged();
-    }
+    void setAppList(AppList* value);
 
 public slots:
 
-    void appListChanged();
     void select(int i);
-    void printMe();
-
-signals:
-
-    void curIndexChanged();
+    void dataChangedSlot();
 
 private:
 
-    void toggleHook(int i);
-
-    QVector<App> m_applist;
-    int m_curIndex;
-
+    AppList* m_applist = nullptr;
 };
-
-BOOL CALLBACK getWindowsListCallback2(HWND hWnd, LPARAM lParam);

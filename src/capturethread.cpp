@@ -7,16 +7,19 @@
 #include <QDebug>
 #include <QPainter>
 #include <QtWin>
+#include <vector>
 
 #include "backend.h"
 #include "hooks_dll/mousehook.h"
 #include "perfomancetimer.h"
+#include "windows.h"
 
 extern QWindow* wnd;
 
 CaptureThread::CaptureThread():
     m_stop (false),
-    m_pause (false)
+    m_pause (false),
+    m_updatetimer(this)
 {
     m_screen = QGuiApplication::primaryScreen();
     if (wnd)
@@ -38,19 +41,21 @@ CaptureThread::CaptureThread():
     m_filenameb = BackEnd::getInstance()->fileName().toLatin1();
     m_filename = m_filenameb.data();
 
-//    if(m_recMode == RECORD_MODE::Window) {
-//        InstallMouseHook((HWND)wnd->winId(), m_hwnd);
-//    }
-//    else {
-//        InstallGlobalHook((HWND)wnd->winId());
-//    }
+    // Set up update window handles
+
+    m_windowHandles = new std::vector<HWND>();
+    m_updatetimer.setInterval(1000);
+    connect(&m_updatetimer, &QTimer::timeout, this, &CaptureThread::update);
+    connect(this, &CaptureThread::requestVector, (BackEnd::getInstance())->appList(), &AppList::updateVector);
+    InstallMultiHook((HWND)wnd->winId(), m_windowHandles);
+    m_updatetimer.start();
 
     m_timer.start();
 }
 
 CaptureThread::~CaptureThread() {
-    //delete m_filename;
-    RemoveHooks();
+    m_updatetimer.stop();
+    UninstallMultiHook();
 }
 
 void CaptureThread::run() {
@@ -147,6 +152,12 @@ QImage CaptureThread::fixAspectRatio(QImage img) {
         int newwidth = (int)img.height()*m_asp;
         return img.copy( (img.width() - newwidth) / 2, 0, newwidth, img.height());
     }
+}
+
+void CaptureThread::update()
+{
+    qDebug() << "update";
+    emit requestVector(m_windowHandles);
 }
 
 void CaptureThread::checkSleeping(bool makeSleeping) {

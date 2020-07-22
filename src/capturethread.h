@@ -62,7 +62,19 @@ public:
 
     QImage fixAspectRatio(QImage img);
 
+public slots:
+
+    void update();
+
+signals:
+
+    void resultReady();
+    void errorHappened();
+    void sleepingSignal(bool sleepflag);
+    void requestVector(std::vector<HWND> *vector);
+
 private:
+
     void checkSleeping(bool makeSleeping);
 
     bool m_stop;
@@ -85,11 +97,7 @@ private:
 
     QByteArray m_filenameb;
     const char* m_filename;
+    std::vector<HWND>* m_windowHandles;
     //QMutex mux;
-
-signals:
-    void resultReady();
-    void errorHappened();
-    void sleepingSignal(bool sleepflag);
-
+    QTimer m_updatetimer;
 };

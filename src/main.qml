@@ -5,7 +5,8 @@ import QtQuick.Controls 2.12
 import QtQuick.Controls.Universal 2.12
 import Qt.labs.settings 1.0
 import io.qt.examples.backend 1.0
-//import io.qt.examples.enums 1.0
+import kh.components 1.0
+
 import Theme 1.0
 import "Components"
 
@@ -37,7 +38,7 @@ ApplicationWindow {
 
     Connections {
         target: BackEnd
-        onCloseReady: {
+        function onCloseReady() {
             console.log("ready closing");
             wnd.close();
         }
@@ -388,7 +389,7 @@ ApplicationWindow {
                             width: 20
                             //enabled: BackEnd.lockParam
                             checked: BackEnd.sleepMode
-                            onCheckedChanged: BackEnd.sleepMode = checked
+                            onClicked: BackEnd.sleepMode = checked
                         }
                         Label {
                             Layout.fillWidth: true
@@ -398,7 +399,8 @@ ApplicationWindow {
                         }
                     }
                     AppList {
-
+                        Layout.fillWidth: true
+                        height: 300
                     }
                 }
             }

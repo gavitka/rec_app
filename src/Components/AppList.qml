@@ -3,22 +3,25 @@ import QtQuick.Controls 2.12
 import QtQuick.Layouts 1.12
 import Theme 1.0
 import io.qt.examples.backend 1.0
+import kh.components 1.0
 
 ListView {
-    Layout.fillWidth: true
     id: appListView
-    model: BackEnd.appListModel
     clip: true
 
-    height: 300
+    model: AppListModel {
+        id: appListModel
+        appList: BackEnd.appList
+    }
 
     delegate: CheckDelegate {
         text: model.text
-        checked: model.sel
+        checked: model.selected
         width: parent.width
         onCheckedChanged: {
             appListView.model.select(index);
-            appListView.model.printMe();
         }
-    }
-}
+    } // CheckDelegate
+
+    ScrollBar.vertical: ScrollBar { }
+} // ListView

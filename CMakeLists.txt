@@ -58,6 +58,9 @@ add_executable(${PROJECT_NAME} WIN32
     src/VideoCapture.h
     src/perfomancetimer.cpp
     src/perfomancetimer.h
+    src/applist.cpp
+    src/applist.h
+    src/pch.h
 
     README.md
     installer/installer.nsi
@@ -65,6 +68,10 @@ add_executable(${PROJECT_NAME} WIN32
     ${SRC_UI}
     ${RESOURCES}
     ${QTRESOURCES}
+    )
+
+target_precompile_headers(${PROJECT_NAME}
+    PUBLIC src/pch.h
     )
 
 source_group("ui" FILES ${SRC_UI})
@@ -131,6 +138,9 @@ target_link_libraries(${PROJECT_NAME} Mfsrcsnk)
 target_link_libraries(${PROJECT_NAME} mfuuid)
 
 target_link_libraries(${PROJECT_NAME} ${PROJECT_DLL})
+
+
+target_link_libraries(${PROJECT_DLL} Qt5::Core)
 
 # set startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

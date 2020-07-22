@@ -80,7 +80,8 @@ BackEnd::BackEnd(QObject *parent) :
     m_windowName = m_settings.value("windowName").toString();
     getWindowsList();
 
-    m_appList = new AppListModel();
+    m_appList = new AppList(nullptr);
+    m_appList->update();
 
     setImageSource("image://preview/");
     if (wnd) m_screen = wnd->screen();
@@ -324,6 +325,11 @@ void BackEnd::setFrameRateIndex(int value) {
     }
     m_settings.setValue("frameRate", value);
     emit frameRateIndexChanged();
+}
+
+AppList *BackEnd::appList()
+{
+    return m_appList;
 }
 
 void BackEnd::getWindowsList() {

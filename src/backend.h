@@ -88,8 +88,7 @@ class BackEnd : public QObject
     Q_PROPERTY(int bitRateIndex READ bitRateIndex WRITE setBitRateIndex NOTIFY bitRateIndexChanged)
     Q_PROPERTY(QList<QObject*> frameRateList READ frameRateList NOTIFY frameRateListChanged)
     Q_PROPERTY(int frameRateIndex READ frameRateIndex WRITE setFrameRateIndex NOTIFY frameRateIndexChanged)
-
-    Q_PROPERTY(AppListModel* appListModel READ appListModel NOTIFY appListModelChanged)
+    Q_PROPERTY(AppList* appList READ appList)
 
 public:
 
@@ -279,11 +278,9 @@ public:
         else return false;
     }
 
-    AppListModel* appListModel() {
-        return m_appList;
-    }
-
     // ----------------- </PROP>  -----------------
+
+    AppList* appList();
 
     QSettings* getSettings(){return &m_settings;}
     qint64 getElapsedTime();
@@ -325,7 +322,6 @@ signals:
     void statusLineChanged();
     void recordReadyChanged();
     void isRecordingChanged();
-    void appListModelChanged();
     void closeReady();
 
 public slots:
@@ -383,8 +379,8 @@ private:
     int m_frameRateIndex;
     QString m_windowName;
     bool m_sleepingflag;
-    AppListModel* m_appList;
     bool m_windowCloseFlag = false;
+    AppList* m_appList = nullptr;
 };
 
 class WindowObject : public QObject
