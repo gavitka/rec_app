@@ -31,15 +31,19 @@ CaptureThread::CaptureThread():
     m_recMode = BackEnd::getInstance()->recordMode();
     m_hwnd = BackEnd::getInstance()->getHwnd();
     m_bitRate = BackEnd::getInstance()->bitRate();
+    m_sleepflag = false;
 
     QString s = BackEnd::getInstance()->fileName();
 
     m_filenameb = BackEnd::getInstance()->fileName().toLatin1();
     m_filename = m_filenameb.data();
 
-    if(m_recMode == RECORD_MODE::Window) {
-        InstallMouseHook((HWND)wnd->winId(), m_hwnd);
-    }
+//    if(m_recMode == RECORD_MODE::Window) {
+//        InstallMouseHook((HWND)wnd->winId(), m_hwnd);
+//    }
+//    else {
+//        InstallGlobalHook((HWND)wnd->winId());
+//    }
 
     m_timer.start();
 }
@@ -59,8 +63,8 @@ void CaptureThread::run() {
         while(m_pause) {
             QThread::msleep(100);
         }
-        if(m_recMode == RECORD_MODE::Window) {
-            if (m_timer.elapsed() < 3000 || !BackEnd::getInstance()->sleepMode()) {
+        if (m_timer.elapsed() < 3000 || !BackEnd::getInstance()->sleepMode()) {
+            if(m_recMode == RECORD_MODE::Window) {
                 if(IsWindow(m_hwnd)) {
                     QImage img2 = fixAspectRatio(CaptureThread::CaptureWindow(m_screen, m_hwnd));
                     PerfomanceTimer::getInstance()->elapsed("Image_crop");
@@ -72,13 +76,15 @@ void CaptureThread::run() {
                 }
             }
             else {
-                //qDebug() << "Sleeping...." ;
+                QImage img2 = fixAspectRatio(CaptureThread::CaptureScreen(m_screen));
+                PerfomanceTimer::getInstance()->elapsed("Image_crop");
+                vc.AddFrame(img2);
             }
+            checkSleeping(false);
         }
         else {
-            QImage img2 = fixAspectRatio(CaptureThread::CaptureScreen(m_screen));
-            PerfomanceTimer::getInstance()->elapsed("Image_crop");
-            vc.AddFrame(img2);
+            checkSleeping(true);
+            qDebug() << "Sleeping...";
         }
         if(m_stop) {
             break;
@@ -107,7 +113,7 @@ QImage CaptureThread::CaptureScreen(QScreen* screen) {
     QPoint p = QCursor::pos();
     p.setX(p.x() - 32);
     p.setY(p.y() - 32);
-    painter.drawPixmap(p,pixmap_cursor);
+    painter.drawPixmap(p, pixmap_cursor);
     PerfomanceTimer::getInstance()->elapsed("Draw_cursor");
     QImage image (pixmap.toImage());
     PerfomanceTimer::getInstance()->elapsed("Screenshot_to_image");
@@ -140,6 +146,13 @@ QImage CaptureThread::fixAspectRatio(QImage img) {
     else {
         int newwidth = (int)img.height()*m_asp;
         return img.copy( (img.width() - newwidth) / 2, 0, newwidth, img.height());
+    }
+}
+
+void CaptureThread::checkSleeping(bool makeSleeping) {
+    if (m_sleepflag != makeSleeping) {
+        m_sleepflag = makeSleeping;
+        emit sleepingSignal(m_sleepflag);
     }
 }
 

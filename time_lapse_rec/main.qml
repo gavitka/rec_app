@@ -9,7 +9,7 @@ import io.qt.examples.backend 1.0
 import Theme 1.0
 import "Components"
 
-Window {
+ApplicationWindow {
     visible: true
     width: 500
     height: 600
@@ -25,6 +25,22 @@ Window {
         property alias y: wnd.y
         property alias width: wnd.width
         property alias height: wnd.height
+    }
+
+    onClosing: {
+        if(BackEnd.isRecording == true){
+            console.log("deny closing");
+            close.accepted = false;
+            BackEnd.close();
+        }
+    }
+
+    Connections {
+        target: BackEnd
+        onCloseReady: {
+            console.log("ready closing");
+            wnd.close();
+        }
     }
 
     ColumnLayout {
@@ -318,31 +334,25 @@ Window {
                         wrapMode: Text.WordWrap
                         visible: BackEnd.recMode
                     }
-//                    RowLayout{
-                        ComboBox{
-                            visible: BackEnd.recMode
-                            id:windowList
-                            Layout.fillWidth: true
-                            model:BackEnd.windowList
-                            textRole: "name"
-                            enabled: BackEnd.lockParam
-                            Binding { target: BackEnd
-                                property: "windowIndex"
-                                value: windowList.currentIndex
-                            }
-                            Binding { target: windowList
-                                property: "currentIndex"
-                                value: BackEnd.windowIndex
-                            }
-                            onPressedChanged: {
-                                BackEnd.getWindowsList()
-                            }
+                    ComboBox{
+                        visible: BackEnd.recMode
+                        id:windowList
+                        Layout.fillWidth: true
+                        model:BackEnd.windowList
+                        textRole: "name"
+                        enabled: BackEnd.lockParam
+                        Binding { target: BackEnd
+                            property: "windowIndex"
+                            value: windowList.currentIndex
                         }
-//                        Button{
-//                            text: "Refresh"
-//                            onClicked: BackEnd.getWindowsList()
-//                        }
-//                    }
+                        Binding { target: windowList
+                            property: "currentIndex"
+                            value: BackEnd.windowIndex
+                        }
+                        onPressedChanged: {
+                            BackEnd.getWindowsList()
+                        }
+                    }
                     /* --  -- */
                     Rectangle {
                         Layout.margins: 10
@@ -386,6 +396,9 @@ Window {
                             font.pointSize: 16
                             font.weight: Font.DemiBold
                         }
+                    }
+                    AppList {
+
                     }
                 }
             }

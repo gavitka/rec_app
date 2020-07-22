@@ -63,6 +63,8 @@ public:
     QImage fixAspectRatio(QImage img);
 
 private:
+    void checkSleeping(bool makeSleeping);
+
     bool m_stop;
     bool m_pause;
     HWND m_hwnd;
@@ -79,6 +81,7 @@ private:
     int m_fps;
     int m_bitRate;
     int m_cropmode;
+    bool m_sleepflag;
 
     QByteArray m_filenameb;
     const char* m_filename;
@@ -87,5 +90,6 @@ private:
 signals:
     void resultReady();
     void errorHappened();
+    void sleepingSignal(bool sleepflag);
 
 };

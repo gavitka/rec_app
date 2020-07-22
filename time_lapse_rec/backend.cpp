@@ -43,6 +43,7 @@ BackEnd::BackEnd(QObject *parent) :
     m_filePrefix = "record";
     m_recordTimer = QElapsedTimer();
     m_elapsedTime = 0;
+    m_sleepingflag = false;
 
     setFilePath( m_settings.value("filePath").toString());
     setFilePrefix(m_settings.value("filePrefix").toString());
@@ -78,6 +79,8 @@ BackEnd::BackEnd(QObject *parent) :
 
     m_windowName = m_settings.value("windowName").toString();
     getWindowsList();
+
+    m_appList = new AppListModel();
 
     setImageSource("image://preview/");
     if (wnd) m_screen = wnd->screen();
@@ -116,6 +119,7 @@ void BackEnd::startRecording() {
         // framerate
         connect(m_thr, &CaptureThread::resultReady, this, &BackEnd::handleResults);
         connect(m_thr, &CaptureThread::errorHappened, this, &BackEnd::handleError);
+        connect(m_thr, SIGNAL(sleepingSignal(bool)), this, SLOT(handleSleeping(bool)));
         m_thr->start();
         setRecordStatus(RECORD_STATUS::Rec);
     }
@@ -155,6 +159,9 @@ void BackEnd::stopRecording() {
 void BackEnd::handleResults() {
     delete m_thr;
     QString value = m_outFileName;
+    if(m_windowCloseFlag == true) {
+        emit closeReady();
+    }
 }
 
 void BackEnd::handleError() {
@@ -199,6 +206,7 @@ void BackEnd::setRecMode(bool value) {
     emit recModeChanged();
     emit recordReadyChanged();
     refreshImage();
+    setImageSource("image://preview/");
 }
 
 QString BackEnd::recordingTime() {
@@ -211,15 +219,18 @@ QString BackEnd::recordingTime() {
     hour = floor(min / 60);
     min = min % 60;
     if(t > 0) {
-        return "Recording time: " + QString("%1:%2:%3").arg(int2str(hour)).arg(int2str(min)).arg(int2str(sec));
+        if(m_sleepingflag == false) {
+            return "Recording time: " + QString("%1:%2:%3").arg(int2str(hour)).arg(int2str(min)).arg(int2str(sec));
+        } else {
+            return "Sleeping...";
+        }
     }
     else {
         return "";
     }
 }
 
-qint64 BackEnd::getElapsedTime()
-{
+qint64 BackEnd::getElapsedTime() {
     if(recordStatus() == RECORD_STATUS::Pause) {
         return m_elapsedTime;
     } else if (recordStatus() == RECORD_STATUS::Rec) {
@@ -232,14 +243,14 @@ qint64 BackEnd::getElapsedTime()
     }
 }
 
-void BackEnd::refreshImage()
-{
+void BackEnd::refreshImage() {
     if(recMode() == RECORD_MODE::Window) {
         m_imgpreview = CaptureThread::CaptureWindow(m_screen, m_hwnd);
+        qDebug() << "Window";
     } else {
         m_imgpreview = CaptureThread::CaptureScreen(m_screen);
+        qDebug() << "Screen";
     }
-
     emit imageSourceChanged();
 }
 
@@ -327,6 +338,19 @@ void BackEnd::getWindowsList() {
     }
     emit windowListChanged();
     setWindowIndex(index);
+}
+
+void BackEnd::handleSleeping(bool sleeping) {
+    m_sleepingflag = sleeping;
+    refreshUI();
+}
+
+void BackEnd::close() {
+    if(recordStatus() == RECORD_STATUS::Rec || recordStatus() == RECORD_STATUS::Pause) {
+       stopRecording();
+       m_windowCloseFlag = true;
+    }
+    emit closeReady();
 }
 
 BOOL CALLBACK getWindowsListCallback(HWND hwnd, LPARAM lParam) {

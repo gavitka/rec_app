@@ -1,6 +1,7 @@
 QT += quick
 QT += widgets
 QT += winextras
+QT += gui
 QT += quickcontrols2
 CONFIG += c++11
 
@@ -17,6 +18,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         VideoCapture.cpp \
+        applistmodel.cpp \
         backend.cpp \
         capturethread.cpp \
         main.cpp \
@@ -38,6 +40,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     VideoCapture.h \
+    applistmodel.h \
     backend.h \
     capturethread.h \
     kheventfilter.h \
@@ -80,8 +83,7 @@ LIBS += -L..\build_dll\release -lhooks_dll
 
 QMAKE_LFLAGS += /NODEFAULTLIB:library
 
-DISTFILES = \
-    Components/TopButton.qml
+DISTFILES =
 
 msvc:release {
     QMAKE_CXXFLAGS_RELEASE += /Zi

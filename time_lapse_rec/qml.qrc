@@ -14,5 +14,6 @@
         <file>images/close.png</file>
         <file>images/minimize.png</file>
         <file>images/logo.ico</file>
+        <file>Components/AppList.qml</file>
     </qresource>
 </RCC>

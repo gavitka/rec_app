@@ -24,6 +24,9 @@ public:
             BackEnd::getInstance()->setMouseX(mpt.x);
             BackEnd::getInstance()->setMouseY(mpt.y);
             BackEnd::getInstance()->kick();
+            // MOUSEHOOKSTRUCT* mhs = (MOUSEHOOKSTRUCT*)(msg->lParam);
+            // qDebug() << "msg->hwnd" << (HWND)(msg->hwnd);
+            // qDebug() << "mhs->hwnd" << (HWND)(mhs->hwnd);
         }
         return false;
     }

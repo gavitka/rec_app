@@ -16,6 +16,9 @@
 #include <QQuickImageProvider>
 #include <QRandomGenerator>
 #include <QElapsedTimer>
+#include <QScreen>
+
+#include "applistmodel.h"
 
 class CaptureThread;
 
@@ -86,13 +89,15 @@ class BackEnd : public QObject
     Q_PROPERTY(QList<QObject*> frameRateList READ frameRateList NOTIFY frameRateListChanged)
     Q_PROPERTY(int frameRateIndex READ frameRateIndex WRITE setFrameRateIndex NOTIFY frameRateIndexChanged)
 
+    Q_PROPERTY(AppListModel* appListModel READ appListModel NOTIFY appListModelChanged)
+
 public:
 
     // ----------------- <SINGLETON>  -----------------
 
     static QObject *qmlInstance(QQmlEngine *engine, QJSEngine *scriptEngine) {
-        Q_UNUSED(engine);
-        Q_UNUSED(scriptEngine);
+        Q_UNUSED(engine)
+        Q_UNUSED(scriptEngine)
         return (QObject*)getInstance();
     }
 
@@ -274,6 +279,10 @@ public:
         else return false;
     }
 
+    AppListModel* appListModel() {
+        return m_appList;
+    }
+
     // ----------------- </PROP>  -----------------
 
     QSettings* getSettings(){return &m_settings;}
@@ -316,6 +325,8 @@ signals:
     void statusLineChanged();
     void recordReadyChanged();
     void isRecordingChanged();
+    void appListModelChanged();
+    void closeReady();
 
 public slots:
 
@@ -330,6 +341,8 @@ public slots:
         emit recordingTimeChanged();
     }
     QScreen* getScreen(){return m_screen;}
+    void handleSleeping(bool sleeping);
+    void close();
 
 private:
 
@@ -369,7 +382,9 @@ private:
     int m_bitRateIndex;
     int m_frameRateIndex;
     QString m_windowName;
-
+    bool m_sleepingflag;
+    AppListModel* m_appList;
+    bool m_windowCloseFlag = false;
 };
 
 class WindowObject : public QObject

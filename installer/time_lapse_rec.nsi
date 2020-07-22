@@ -74,11 +74,9 @@ section "install"
 	File /r "..\build_app\release\imageformats\*"
 	File /r "..\build_app\release\platforms\*"
 	File /r "..\build_app\release\bearer\*"
-	File /r "..\build_app\release\platforminputcontexts\*"
 	File /r "..\build_app\release\qmltooling\*"
 	File /r "..\build_app\release\scenegraph\*"
 	File /r "..\build_app\release\styles\*"
-	File /r "..\build_app\release\virtualkeyboard\*"
 	
 	# Add any other files for the install directory (license files, app data, etc) here
  
