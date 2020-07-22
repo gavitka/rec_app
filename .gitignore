@@ -23,5 +23,6 @@ build_app/
 #*.pro.user
 
 /build/
+/build*/
 
 CMakeLists.txt.user

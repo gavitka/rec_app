@@ -83,6 +83,9 @@ add_library(${PROJECT_DLL} SHARED
 
 target_compile_definitions(${PROJECT_DLL} PUBLIC MOUSEHOOK_EXPORTS)
 
+set(CMAKE_EXE_LINKER_FLAGS
+    "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMT")
+
 target_link_libraries(${PROJECT_NAME} Qt5::Widgets)
 target_link_libraries(${PROJECT_NAME} Qt5::Core)
 target_link_libraries(${PROJECT_NAME} Qt5::Qml)
@@ -114,7 +117,18 @@ target_link_libraries(${PROJECT_NAME} odbc32)
 target_link_libraries(${PROJECT_NAME} odbccp32)
 target_link_libraries(${PROJECT_NAME} Ws2_32)
 target_link_libraries(${PROJECT_NAME} Secur32)
+target_link_libraries(${PROJECT_NAME} Strmiids)
+
+# Do i really need to link all this SHIT?
+
+target_link_libraries(${PROJECT_NAME} Mf)
+target_link_libraries(${PROJECT_NAME} Mfcore)
 target_link_libraries(${PROJECT_NAME} Mfplat)
+target_link_libraries(${PROJECT_NAME} mfplay)
+target_link_libraries(${PROJECT_NAME} mfreadwrite)
+target_link_libraries(${PROJECT_NAME} mfsensorgroup)
+target_link_libraries(${PROJECT_NAME} Mfsrcsnk)
+target_link_libraries(${PROJECT_NAME} mfuuid)
 
 target_link_libraries(${PROJECT_NAME} ${PROJECT_DLL})
 
