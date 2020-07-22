@@ -29,15 +29,25 @@ BackEnd* BackEnd::m_instance = nullptr;
 
 extern QWindow* wnd;
 
+QObject *BackEnd::qmlInstance(QQmlEngine *engine, QJSEngine *scriptEngine) {
+    Q_UNUSED(engine)
+    Q_UNUSED(scriptEngine)
+    return (QObject*)getInstance();
+}
+
+BackEnd *BackEnd::getInstance() {
+    if(!m_instance) {
+        m_instance = new BackEnd();
+    }
+    return m_instance;
+}
+
 BackEnd::BackEnd(QObject *parent) :
     QObject(parent),
     m_thr(nullptr),
     m_hwnd(nullptr),
     m_settings("Gavitka software", "Time lapse recorder")
 {
-    m_framesPerSecond = 24;
-    m_shotsPerSecond = 3;
-
     setRecordStatus(RECORD_STATUS::Idle);
     m_recMode = RECORD_MODE::Screen;
     m_filePrefix = "record";
@@ -45,7 +55,7 @@ BackEnd::BackEnd(QObject *parent) :
     m_elapsedTime = 0;
     m_sleepingflag = false;
 
-    setFilePath( m_settings.value("filePath").toString());
+    setFilePath(m_settings.value("filePath").toString());
     setFilePrefix(m_settings.value("filePrefix").toString());
     setBitRateIndex(m_settings.value("bitRate").toInt());
     setResolutionIndex(m_settings.value("resolution").toInt());
@@ -80,7 +90,7 @@ BackEnd::BackEnd(QObject *parent) :
     m_windowName = m_settings.value("windowName").toString();
     getWindowsList();
 
-    m_appList = new AppList(nullptr);
+    m_appList = new AppList(nullptr); // Application list model
     m_appList->update();
 
     setImageSource("image://preview/");
@@ -93,13 +103,15 @@ BackEnd::~BackEnd()
     delete m_screen;
 }
 
-void BackEnd::kick() {
+void BackEnd::kick()
+{
     if(m_thr != nullptr) {
         m_thr->kick();
     }
 }
 
-QString BackEnd::startButtonText() {
+QString BackEnd::startButtonText()
+{
     QString ret;
     if(recordStatus() == RECORD_STATUS::Idle) {
         ret = "Start recording";
@@ -113,7 +125,8 @@ QString BackEnd::startButtonText() {
     return ret;
 }
 
-void BackEnd::startRecording() {
+void BackEnd::startRecording()
+{
     if(recordStatus() == RECORD_STATUS::Idle) {
         m_thr = new CaptureThread(); // specify the capture frame rate
         // filename
@@ -127,7 +140,8 @@ void BackEnd::startRecording() {
     m_elapsedTime = 0;
     m_recordTimer.start();
     m_timer = new QTimer(this);
-    connect(m_timer, SIGNAL(timeout()), this, SLOT(timerUpdate()));
+    connect(m_timer, &QTimer::timeout, this, &BackEnd::timerUpdate);
+
     m_timer->start(1000);
 }
 
@@ -147,7 +161,8 @@ void BackEnd::pauseRecording()
     }
 }
 
-void BackEnd::stopRecording() {
+void BackEnd::stopRecording()
+{
     if(m_thr != nullptr && m_thr->isRunning()) {
         m_elapsedTime +=  m_recordTimer.elapsed();
         m_timer->stop();
@@ -157,7 +172,8 @@ void BackEnd::stopRecording() {
     }
 }
 
-void BackEnd::handleResults() {
+void BackEnd::handleResults()
+{
     delete m_thr;
     QString value = m_outFileName;
     if(m_windowCloseFlag == true) {
@@ -165,17 +181,20 @@ void BackEnd::handleResults() {
     }
 }
 
-void BackEnd::handleError() {
+void BackEnd::handleError()
+{
     stopRecording();
 }
 
-void BackEnd::refreshUI() {
+void BackEnd::refreshUI()
+{
     emit lockParamChanged();
     emit statusLineChanged();
     emit recordingTimeChanged();
 }
 
-bool BackEnd::lockParam(){
+bool BackEnd::lockParam()
+{
     if (recordStatus() == RECORD_STATUS::Idle) {
         return true;
     }
@@ -184,7 +203,8 @@ bool BackEnd::lockParam(){
     }
 }
 
-bool BackEnd::recMode(){
+bool BackEnd::recMode()
+{
     if(m_recMode == RECORD_MODE::Window) {
         return true;
     }
@@ -193,8 +213,8 @@ bool BackEnd::recMode(){
     }
 }
 
-void BackEnd::setRecMode(bool value) {
-    //qDebug() << "Set Rec Mode: " << value << endl;
+void BackEnd::setRecMode(bool value)
+{
     if(value == true) {
         m_recMode = RECORD_MODE::Window;
     }
@@ -210,7 +230,8 @@ void BackEnd::setRecMode(bool value) {
     setImageSource("image://preview/");
 }
 
-QString BackEnd::recordingTime() {
+QString BackEnd::recordingTime()
+{
     qint64 t;
     int sec, min, hour;
     t = getElapsedTime();
@@ -231,7 +252,8 @@ QString BackEnd::recordingTime() {
     }
 }
 
-qint64 BackEnd::getElapsedTime() {
+qint64 BackEnd::getElapsedTime()
+{
     if(recordStatus() == RECORD_STATUS::Pause) {
         return m_elapsedTime;
     } else if (recordStatus() == RECORD_STATUS::Rec) {
@@ -244,7 +266,8 @@ qint64 BackEnd::getElapsedTime() {
     }
 }
 
-void BackEnd::refreshImage() {
+void BackEnd::refreshImage()
+{
     if(recMode() == RECORD_MODE::Window) {
         m_imgpreview = CaptureThread::CaptureWindow(m_screen, m_hwnd);
         qDebug() << "Window";
@@ -255,7 +278,8 @@ void BackEnd::refreshImage() {
     emit imageSourceChanged();
 }
 
-void BackEnd::setResolutionIndex(int value) {
+void BackEnd::setResolutionIndex(int value)
+{
     m_resolutionIndex = value;
     switch(value) {
     case RESOLUTIONS::res360p:
@@ -275,13 +299,15 @@ void BackEnd::setResolutionIndex(int value) {
     emit resolutionIndexChanged();
 }
 
-void BackEnd::setCropIndex(int value) {
+void BackEnd::setCropIndex(int value)
+{
     m_cropIndex = value;
     m_settings.setValue("crop", value);
     emit cropIndexChanged();
 }
 
-void BackEnd::setBitRateIndex(int value) {
+void BackEnd::setBitRateIndex(int value)
+{
     m_bitRateIndex = value;
     switch(value) {
     case BITRATES::b500:
@@ -304,7 +330,8 @@ void BackEnd::setBitRateIndex(int value) {
     emit bitRateIndexChanged();
 }
 
-void BackEnd::setFrameRateIndex(int value) {
+void BackEnd::setFrameRateIndex(int value)
+{
     m_frameRateIndex = value;
     switch(value) {
     case FRAMERATES::x1:
@@ -332,7 +359,8 @@ AppList *BackEnd::appList()
     return m_appList;
 }
 
-void BackEnd::getWindowsList() {
+void BackEnd::getWindowsList()
+{
     m_dataList.clear();
     EnumWindows(getWindowsListCallback, reinterpret_cast<LPARAM>(&m_dataList));
     int index = 0;
@@ -346,35 +374,24 @@ void BackEnd::getWindowsList() {
     setWindowIndex(index);
 }
 
-void BackEnd::handleSleeping(bool sleeping) {
+void BackEnd::timerUpdate()
+{
+    emit recordingTimeChanged();
+}
+
+void BackEnd::handleSleeping(bool sleeping)
+{
     m_sleepingflag = sleeping;
     refreshUI();
 }
 
 void BackEnd::close() {
-    if(recordStatus() == RECORD_STATUS::Rec || recordStatus() == RECORD_STATUS::Pause) {
+    if(recordStatus() == RECORD_STATUS::Rec || recordStatus() == RECORD_STATUS::Pause)
+    {
        stopRecording();
        m_windowCloseFlag = true;
     }
     emit closeReady();
-}
-
-BOOL CALLBACK getWindowsListCallback(HWND hwnd, LPARAM lParam) {
-    const DWORD TITLE_SIZE = 1024;
-    WCHAR windowTitle[TITLE_SIZE];
-
-    GetWindowTextW(hwnd, windowTitle, TITLE_SIZE);
-
-    int length = ::GetWindowTextLength(hwnd);
-    std::wstring title(&windowTitle[0]);
-    if (!IsWindowVisible(hwnd) || length == 0 || title == L"Program Manager") {
-        return TRUE;
-    }
-
-    QList<QObject*>& dataList = *reinterpret_cast<QList<QObject*>*>(lParam);
-    dataList.append(new WindowObject(hwnd, QString::fromStdWString(windowTitle)));
-
-    return TRUE;
 }
 
 void BackEnd::setWindowIndex(int index) {
@@ -424,4 +441,23 @@ QImage PreviewImageProvider::requestImage(const QString &id, QSize *size, const 
     if (size)
         *size = QSize(image.width(), image.height());
     return image;
+}
+
+
+BOOL CALLBACK getWindowsListCallback(HWND hwnd, LPARAM lParam) {
+    const DWORD TITLE_SIZE = 1024;
+    WCHAR windowTitle[TITLE_SIZE];
+
+    GetWindowTextW(hwnd, windowTitle, TITLE_SIZE);
+
+    int length = ::GetWindowTextLength(hwnd);
+    std::wstring title(&windowTitle[0]);
+    if (!IsWindowVisible(hwnd) || length == 0 || title == L"Program Manager") {
+        return TRUE;
+    }
+
+    QList<QObject*>& dataList = *reinterpret_cast<QList<QObject*>*>(lParam);
+    dataList.append(new WindowObject(hwnd, QString::fromStdWString(windowTitle)));
+
+    return TRUE;
 }

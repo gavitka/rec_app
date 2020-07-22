@@ -51,9 +51,9 @@ enum BITRATES{
 };
 
 class WindowObject;
-class ResolutionObject;
-class BitrateObject;
-class FramerateObject;
+//class ResolutionObject;
+//class BitrateObject;
+//class FramerateObject;
 class ListElement;
 
 QString int2str(int i);
@@ -94,18 +94,8 @@ public:
 
     // ----------------- <SINGLETON>  -----------------
 
-    static QObject *qmlInstance(QQmlEngine *engine, QJSEngine *scriptEngine) {
-        Q_UNUSED(engine)
-        Q_UNUSED(scriptEngine)
-        return (QObject*)getInstance();
-    }
-
-    static BackEnd* getInstance() {
-        if(!m_instance) {
-            m_instance = new BackEnd();
-        }
-        return m_instance;
-    }
+    static QObject *qmlInstance(QQmlEngine *engine, QJSEngine *scriptEngine);
+    static BackEnd* getInstance();
 
     // ----------------- </SINGLETON>  -----------------
 
@@ -333,9 +323,7 @@ public slots:
     void handleError();
     void refreshUI();
     void getWindowsList();
-    void timerUpdate() {
-        emit recordingTimeChanged();
-    }
+    void timerUpdate();
     QScreen* getScreen(){return m_screen;}
     void handleSleeping(bool sleeping);
     void close();
@@ -349,8 +337,8 @@ private:
     int m_height;
     int m_mousex;
     int m_mousey;
-    int m_framesPerSecond;
-    int m_shotsPerSecond;
+    int m_framesPerSecond = 24;
+    int m_shotsPerSecond = 3;
     bool m_lockParam;
     int m_record_status;
     int m_recMode;

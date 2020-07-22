@@ -60,7 +60,7 @@ CaptureThread::~CaptureThread() {
 
 void CaptureThread::run() {
     VideoCapture vc;
-    vc.Init(m_width, m_height, m_fps, 2500, m_filename);
+    vc.Init(m_width, m_height, m_fps, 2500, m_filename); // TODO: use actual bitrate
     while (true) {
         QElapsedTimer timer;
         timer.start();
@@ -156,7 +156,6 @@ QImage CaptureThread::fixAspectRatio(QImage img) {
 
 void CaptureThread::update()
 {
-    qDebug() << "update";
     emit requestVector(m_windowHandles);
 }
 

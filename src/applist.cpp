@@ -43,7 +43,6 @@ void AppList::select(int i)
 
 void AppList::updateVector(std::vector<HWND> *vector)
 {
-    qDebug() << "request update windows";
     if(!vector) return;
     vector->clear();
     for(int i = 0; i < m_data.size(); ++i) {

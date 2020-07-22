@@ -21,6 +21,9 @@ ApplicationWindow {
     //flags: Qt.Window | Qt.FramelessWindowHint
     // Qt.MSWindowsFixedSizeDialogHint
     // Qt.WindowStaysOnTopHint
+
+    //TODO: FramelessWindow
+
     Settings {
         property alias x: wnd.x
         property alias y: wnd.y
@@ -88,7 +91,7 @@ ApplicationWindow {
                                 buttonToggled = !buttonToggled
                             }
                         }
-                    }
+                    } // Item
                     ColumnLayout{
                         Layout.fillWidth: true
                         implicitWidth: 200
@@ -110,10 +113,10 @@ ApplicationWindow {
                             font.pointSize: 10
                             text: BackEnd.statusLine
                         }
-                    }
-                }
-            }
-        }
+                    } // ColumnLayout
+                } // RowLayout
+            } // Rectangle
+        } // RowLayout
         Flickable{
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -159,7 +162,7 @@ ApplicationWindow {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: Qt.openUrlExternally(BackEnd.fileUrl)
                         }
-                    }
+                    } // Text
                     Button {
                         text: "Browse"
                         onClicked: openFolderDialog.open()
@@ -319,7 +322,7 @@ ApplicationWindow {
                             text: "Window"
                             font.pointSize: 14
                         }
-                    }
+                    } // GridLayout
                     /* ----- */
                     Label {
                         Layout.fillWidth: true
@@ -353,7 +356,7 @@ ApplicationWindow {
                         onPressedChanged: {
                             BackEnd.getWindowsList()
                         }
-                    }
+                    } // Combobox
                     /* --  -- */
                     Rectangle {
                         Layout.margins: 10
@@ -369,7 +372,7 @@ ApplicationWindow {
                             anchors.margins: 2
                             fillMode: Image.PreserveAspectFit
                         }
-                    }
+                    } // Rectangle
                     Label {
                         Layout.fillWidth: true
                         text: "Sleep when idle"
@@ -397,16 +400,16 @@ ApplicationWindow {
                             font.pointSize: 16
                             font.weight: Font.DemiBold
                         }
-                    }
+                    } // RowLayout
                     AppList {
                         Layout.fillWidth: true
                         height: 300
                     }
-                }
-            }
+                } // ColumnLayout
+            } // Item
             ScrollBar.vertical: ScrollBar { }
-        }
-    }
+        } // Flickable
+    } // ColumnLayout
     OpenFolderDialog {
         id: openFolderDialog
         folder: BackEnd.fileUrl
