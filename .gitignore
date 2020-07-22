@@ -1,28 +1,12 @@
-/x64
-/Debug
-/ipch
-/MouseHook/Debug
-/MouseHook/x64
-/MouseHook.VC.db
-/.vs
-
-#build_dirs
-build-*
-
-libav/
-
 *.h264
 *.avi
 *.mp4
 
-Trash/
-build_dll/
-build_app/
-/*.exe
-
-#*.pro.user
+/.vscode/
+/installer/*.exe
 
 /build/
 /build*/
 
-CMakeLists.txt.user
+*.txt.user
+*.pro.user
