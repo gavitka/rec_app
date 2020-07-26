@@ -323,7 +323,7 @@ ApplicationWindow {
                             font.pointSize: 14
                         }
                     } // GridLayout
-                    /* ----- */
+                    /* --
                     Label {
                         Layout.fillWidth: true
                         text: "Window"
@@ -356,8 +356,7 @@ ApplicationWindow {
                         onPressedChanged: {
                             BackEnd.getWindowsList()
                         }
-                    } // Combobox
-                    /* --  -- */
+                    } //
                     Rectangle {
                         Layout.margins: 10
                         Layout.alignment: Qt.AlignCenter
@@ -373,6 +372,31 @@ ApplicationWindow {
                             fillMode: Image.PreserveAspectFit
                         }
                     } // Rectangle
+                    -- */
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 42
+                        spacing: 0
+                        Label {
+                            Layout.fillWidth: true
+                            text: "Window list"
+                            font.pointSize: 16
+                            font.weight: Font.DemiBold
+                        }
+                        RefreshButton { }
+                    } // RowLayout
+                    Label {
+                        Layout.fillWidth: true
+                        text: "Select windows for recording. If window recording mode is active " +
+                              "only selected windows will be recorded, otherwise, selected windows " +
+                              "will be used to determine mouse input for sleeping mode option."
+                        font.pointSize: 10
+                        wrapMode: Text.WordWrap
+                    }
+                    AppList {
+                        Layout.fillWidth: true
+                        height: 350
+                    }
                     Label {
                         Layout.fillWidth: true
                         text: "Sleep when idle"
@@ -380,8 +404,8 @@ ApplicationWindow {
                     }
                     Label {
                         Layout.fillWidth: true
-                        text: "If a window does not receive mouse input for 3 seconds." +
-                              " Recording will pause until next time mouse is moved."
+                        text: "If a seleected windows will not receive mouse input for 3 seconds " +
+                              "recording will pause until next time mouse is moved."
                         font.pointSize: 10
                         wrapMode: Text.WordWrap
                     }
@@ -401,10 +425,6 @@ ApplicationWindow {
                             font.weight: Font.DemiBold
                         }
                     } // RowLayout
-                    AppList {
-                        Layout.fillWidth: true
-                        height: 300
-                    }
                 } // ColumnLayout
             } // Item
             ScrollBar.vertical: ScrollBar { }

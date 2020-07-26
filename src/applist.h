@@ -4,6 +4,7 @@
 
 struct App {
     QString name;
+    //QString exename;
     HWND hWnd;
     bool selected = false;
 };

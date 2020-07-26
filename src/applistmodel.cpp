@@ -54,4 +54,3 @@ void AppListModel::dataChangedSlot()
     QModelIndex bottomRight = QAbstractItemModel::createIndex(m_applist->size()-1, 0);;
     emit dataChanged(topLeft, bottomRight, QVector<int>());
 }
-

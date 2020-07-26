@@ -39,6 +39,7 @@ file(GLOB_RECURSE SRC_UI
     src/Components/PauseButton.qml
     src/Components/RecButton.qml
     src/Components/TopButton.qml
+    src/Components/RefreshButton.qml
 )
 
 set(RESOURCES
