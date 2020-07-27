@@ -1,5 +1,4 @@
 #include "capturethread.h"
-#include "VideoCapture.h"
 
 #include <QGuiApplication>
 #include <QPixmap>
@@ -17,8 +16,6 @@
 extern QWindow* wnd;
 
 CaptureThread::CaptureThread():
-    m_stop (false),
-    m_pause (false),
     m_updatetimer(this)
 {
     m_screen = QGuiApplication::primaryScreen();
@@ -26,108 +23,423 @@ CaptureThread::CaptureThread():
         m_screen = wnd->screen();
 
     m_currentFPS = getShotsPerSecond();
-    m_fps = BackEnd::getInstance()->framesPerSecond();
-    m_width = BackEnd::getInstance()->getWidth();
-    m_height = BackEnd::getInstance()->getHeight();
-    m_cropmode = BackEnd::getInstance()->cropIndex();
-    m_asp = (qreal)m_width/m_height;
-    m_recMode = BackEnd::getInstance()->recordMode();
-    m_hwnd = BackEnd::getInstance()->getHwnd();
-    m_bitRate = BackEnd::getInstance()->bitRate();
-    m_sleepflag = false;
-
-    QString s = BackEnd::getInstance()->fileName();
-
-    m_filenameb = BackEnd::getInstance()->fileName().toLatin1();
-    m_filename = m_filenameb.data();
-
-    // Set up update window handles
 
     m_windowHandles = new std::vector<HWND>();
-    m_updatetimer.setInterval(1000);
-    connect(&m_updatetimer, &QTimer::timeout, this, &CaptureThread::update);
-    connect(this, &CaptureThread::requestVector, (BackEnd::getInstance())->appList(), &AppList::updateVector);
-    InstallMultiHook((HWND)wnd->winId(), m_windowHandles);
-    m_updatetimer.start();
 
-    m_timer.start();
+    BackEnd* backEnd = BackEnd::getInstance();
+
+    m_fps =                 backEnd->framesPerSecond();
+    m_width =               backEnd->getWidth();
+    m_height =              backEnd->getHeight();
+    m_cropmode =            backEnd->cropIndex();
+    m_recMode =             backEnd->recordMode();
+    m_hwnd =                backEnd->getHwnd();
+    m_bitRate =             backEnd->bitRate();
+
+    QString filename =      backEnd->fileName();
+    m_b1 = filename.toLatin1();
+
+    QString tempfilename = QDir().tempPath() + QDir::separator() + "tmp.h264";
+    m_b2 = tempfilename.toLatin1();
+
+    m_asp = (qreal)m_width/m_height;
 }
 
 CaptureThread::~CaptureThread() {
-    m_updatetimer.stop();
-    UninstallMultiHook();
 }
 
-void CaptureThread::run() {
-    VideoCapture vc;
-    vc.Init(m_width, m_height, m_fps, 2500, m_filename); // TODO: use actual bitrate
-    while (true) {
-        QElapsedTimer timer;
-        timer.start();
-        PerfomanceTimer::getInstance()->reset();
-        while(m_pause) {
-            QThread::msleep(100);
-        }
-        if (m_timer.elapsed() < 3000 || !BackEnd::getInstance()->sleepMode()) {
-            if(m_recMode == RECORD_MODE::Window) {
-                if(IsWindow(m_hwnd)) {
-                    QImage img2 = fixAspectRatio(CaptureThread::CaptureWindow(m_screen, m_hwnd));
-                    PerfomanceTimer::getInstance()->elapsed("Image_crop");
-                    vc.AddFrame(img2);
-                } else {
-                    if(m_stop == false) {
-                        emit errorHappened();
-                    }
-                }
-            }
-            else {
-                QImage img2 = fixAspectRatio(CaptureThread::CaptureScreen(m_screen));
-                PerfomanceTimer::getInstance()->elapsed("Image_crop");
-                vc.AddFrame(img2);
-            }
-            checkSleeping(false);
-        }
-        else {
-            checkSleeping(true);
-            qDebug() << "Sleeping...";
-        }
-        if(m_stop) {
-            break;
-        }
-        qint64 remainingTime = getShotTimeout() - timer.elapsed();
-        if(remainingTime > 0) {
-            QThread::msleep((ulong)remainingTime);
-            m_currentFPS = getShotsPerSecond();
-        }
-        else {
-            m_currentFPS = (int) 1000 / timer.elapsed();
-        }
-        //qDebug() << "FPS:" << m_currentFPS;
+void CaptureThread::start()
+{
+    try {
+        Init();
+        // Start capture
+        QTimer::singleShot(0, this, &CaptureThread::Capture);
+    } catch (std::exception e) {
+        qDebug(e.what());
+        exit(-1);
     }
-    vc.Finish();
-
-    PerfomanceTimer::getInstance()->getResult();
-    emit CaptureThread::resultReady();
 }
 
-QImage CaptureThread::CaptureScreen(QScreen* screen) {
+void CaptureThread::stop() {
+    if(m_pause == true)
+        m_pause = false;
+    m_stop = true;
+}
+
+void CaptureThread::togglepause() {
+    this->m_pause = !this->m_pause;
+    m_status = this->m_pause ? RECORD_STATUS::Pause : RECORD_STATUS::Rec;
+    emit statusChanged();
+}
+
+bool CaptureThread::isPaused() {
+    return m_pause;
+}
+
+HWND CaptureThread::getHwnd()
+{
+    return m_hwnd;
+}
+
+void CaptureThread::setHwnd(HWND value)
+{
+    m_hwnd = value;
+}
+
+void CaptureThread::kick()
+{
+    if(m_sleeptimer.elapsed() >= 3000)
+        m_sleeptimer.restart();
+}
+
+int CaptureThread::FPS(){return m_currentFPS;}
+
+bool CaptureThread::CheckWindow()
+{
+    for(auto t : *m_windowHandles) {
+        if(t == GetForegroundWindow())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void CaptureThread::Init()
+{
+    m_updatetimer.setInterval(1000);
+    connect(&m_updatetimer, &QTimer::timeout, this, &CaptureThread::update, Qt::DirectConnection);
+    connect(this, &CaptureThread::requestVector, (BackEnd::getInstance())->appList(), &AppList::updateVector, Qt::DirectConnection);
+
+    m_updatetimer.start();
+    m_sleeptimer.start();
+
+    setStatus(RECORD_STATUS::Rec);
+    emit statusChanged();
+
+    BackEnd* backEnd = BackEnd::getInstance();
+
+    m_fps =         backEnd->framesPerSecond();
+    m_width =       backEnd->getWidth();
+    m_height =      backEnd->getHeight();
+    m_cropmode =    backEnd->cropIndex();
+    m_recMode =     backEnd->recordMode();
+    m_hwnd =        backEnd->getHwnd();
+    m_bitRate =     backEnd->bitRate();
+
+    emit InstallHook(m_windowHandles);
+
+    int err;
+
+    if (!(oformat = av_guess_format(nullptr, tempfilename(), nullptr)))
+        throw std::exception("Failed to define output format");
+
+    if ((err = avformat_alloc_output_context2(&ofctx, oformat, nullptr, tempfilename()) < 0))
+        throw std::exception("Failed to allocate output context");
+
+    if (!(codec = avcodec_find_encoder(oformat->video_codec)))
+        throw std::exception("Failed to find encoder");
+
+    if (!(videoStream = avformat_new_stream(ofctx, codec)))
+        throw std::exception("Failed to create new stream");
+
+    if (!(cctx = avcodec_alloc_context3(codec)))
+        throw std::exception("Failed to allocate codec context");
+
+    videoStream->codecpar->codec_id = oformat->video_codec;
+    videoStream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    videoStream->codecpar->width = m_width;
+    videoStream->codecpar->height = m_height;
+    videoStream->codecpar->format = AV_PIX_FMT_YUV420P;
+    videoStream->codecpar->bit_rate = m_bitRate * 1000;
+    videoStream->time_base = { 1, m_fps };
+
+    avcodec_parameters_to_context(cctx, videoStream->codecpar);
+    cctx->time_base = { 1, m_fps };
+    cctx->max_b_frames = 2;
+    cctx->gop_size = 12;
+    if (videoStream->codecpar->codec_id == AV_CODEC_ID_H264) {
+        av_opt_set(cctx, "preset", "ultrafast", 0);
+    }
+    if (ofctx->oformat->flags & AVFMT_GLOBALHEADER) {
+        cctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+    }
+    avcodec_parameters_from_context(videoStream->codecpar, cctx);
+
+    if ((err = avcodec_open2(cctx, codec, nullptr)) < 0)
+        throw std::exception("Failed to open codec");
+
+    if (!(oformat->flags & AVFMT_NOFILE)) {
+        if ((err = avio_open(&ofctx->pb, tempfilename(), AVIO_FLAG_WRITE)) < 0)
+            throw std::exception("Failed to open file");
+    }
+
+    if ((err = avformat_write_header(ofctx, nullptr)) < 0)
+        throw std::exception("Failed to write header");
+
+    av_dump_format(ofctx, 0, tempfilename(), 1);
+}
+
+void CaptureThread::Capture()
+{
+    if(m_stop) {
+        QTimer::singleShot(0, this, &CaptureThread::Finish);
+        return;
+    }
+
+    qDebug() << "working";
+
+    // TODO: Add mutex
+    QElapsedTimer frametimer;
+    frametimer.start();
+
+    if(!m_pause)
+    {
+        if(m_sleeptimer.elapsed() < 3000 || !BackEnd::getInstance()->sleepMode()) {
+            CaptureFrame();
+            checkSleeping(false);
+        } else {
+            checkSleeping(true);
+        }
+    }
+
+    qint64 remaining_timeout = getShotTimeout() - frametimer.elapsed();
+    remaining_timeout = (remaining_timeout < 0) ? 0: remaining_timeout;
+    QTimer::singleShot(remaining_timeout, this, &CaptureThread::Capture);
+}
+
+void CaptureThread::Finish()
+{
+    // flush avcodec
+    AVPacket pkt;
+    av_init_packet(&pkt);
+    pkt.data = nullptr;
+    pkt.size = 0;
+
+    while(true) {
+        avcodec_send_frame(cctx, nullptr);
+        if (avcodec_receive_packet(cctx, &pkt) == 0) {
+            av_interleaved_write_frame(ofctx, &pkt);
+            av_packet_unref(&pkt);
+        }
+        else break;
+    }
+
+    av_write_trailer(ofctx);
+    if (!(oformat->flags & AVFMT_NOFILE)) {
+        int err = avio_close(ofctx->pb);
+        if (err < 0) {
+            throw std::exception("Failed to close file");
+        }
+    }
+
+    emit UninstallHook();
+
+    Clear();
+    Remux();
+
+    setStatus(RECORD_STATUS::Idle);
+    emit finished();
+}
+
+void CaptureThread::CaptureFrame()
+{
+    QImage image;
+    if(m_recMode == RECORD_MODE::Window) {
+        image = CaptureWindow(m_screen, m_hwnd);
+    } else {
+        image = CaptureScreen(m_screen);
+    }
+
+    int err;
+    if (!videoFrame) {
+
+        videoFrame = av_frame_alloc();
+        videoFrame->format = AV_PIX_FMT_YUV420P;
+        videoFrame->width = cctx->width;
+        videoFrame->height = cctx->height;
+
+        if ((err = av_frame_get_buffer(videoFrame, 32)) < 0) {
+            throw std::exception("Failed to allocate picture");
+        }
+    }
+
+    bool reinitialize_context = false;
+
+    // If somebody resized window
+    if(image.width() != lastimagewidth || image.height() != lastimageheight){
+        reinitialize_context = true;
+        lastimagewidth = image.width();
+        lastimageheight = image.height();
+    }
+
+    if (!swsCtx || reinitialize_context) {
+        swsCtx = sws_getContext(
+                    image.width(),
+                    image.height() - 0,
+                    AV_PIX_FMT_BGRA,
+                    cctx->width,
+                    cctx->height,
+                    AV_PIX_FMT_YUV420P,
+                    SWS_BICUBIC,
+                    nullptr,
+                    nullptr,
+                    nullptr
+                    );
+    }
+
+    int srcstride[1];
+    srcstride[0] = image.width() * 4;
+    const uchar* planes[1];
+    planes[0] = image.bits();
+    sws_scale(
+            swsCtx,
+            planes,
+            srcstride,
+            0,
+            image.height() - 0,
+            videoFrame->data,
+            videoFrame->linesize
+            );
+
+    videoFrame->pts = frameCounter++;
+
+    if ((err = avcodec_send_frame(cctx, videoFrame)) < 0) {
+        throw std::exception("Failed to send frame");
+    }
+
+    AVPacket pkt;
+    av_init_packet(&pkt);
+    pkt.data = nullptr;
+    pkt.size = 0;
+
+    if (avcodec_receive_packet(cctx, &pkt) == 0) {
+        pkt.flags |= AV_PKT_FLAG_KEY;
+        av_interleaved_write_frame(ofctx, &pkt);
+        av_packet_unref(&pkt);
+    }
+}
+
+void CaptureThread::Remux()
+{
+    AVFormatContext *ifmt_ctx = nullptr, *ofmt_ctx = nullptr;
+    int err;
+
+    [&](){
+        if ((err = avformat_open_input(&ifmt_ctx, tempfilename(), nullptr, nullptr)) < 0) {
+            throw std::exception("Failed to open input file for remuxing");
+            return;
+        }
+        if ((err = avformat_find_stream_info(ifmt_ctx, nullptr)) < 0) {
+            throw std::exception("Failed to retrieve input stream information");
+            return;
+        }
+        if ((err = avformat_alloc_output_context2(&ofmt_ctx, nullptr, nullptr, filename()))) {
+            throw std::exception("Failed to allocate output context");
+            return;
+        }
+
+        AVStream *inVideoStream = ifmt_ctx->streams[0];
+        AVStream *outVideoStream = avformat_new_stream(ofmt_ctx, nullptr);
+        if (!outVideoStream) {
+            throw std::exception("Failed to allocate output video stream");
+            return;
+        }
+        outVideoStream->time_base = { 1, m_fps };
+        avcodec_parameters_copy(outVideoStream->codecpar, inVideoStream->codecpar);
+        outVideoStream->codecpar->codec_tag = 0;
+
+        if (!(ofmt_ctx->oformat->flags & AVFMT_NOFILE)) {
+            if ((err = avio_open(&ofmt_ctx->pb, filename(), AVIO_FLAG_WRITE)) < 0) {
+                throw std::exception("Failed to open output file");
+                return;
+            }
+        }
+
+        if ((err = avformat_write_header(ofmt_ctx, nullptr)) < 0) {
+            throw std::exception("Failed to write header to output file");
+            return;
+        }
+
+        AVPacket videoPkt;
+        int64_t ts = 0;
+        while (true) {
+            if ((err = av_read_frame(ifmt_ctx, &videoPkt)) < 0) {
+                break;
+            }
+            videoPkt.stream_index = outVideoStream->index;
+            videoPkt.pts = ts;
+            videoPkt.dts = ts;
+            videoPkt.duration = av_rescale_q(videoPkt.duration, inVideoStream->time_base, outVideoStream->time_base);
+            ts += videoPkt.duration;
+            videoPkt.pos = -1;
+
+            if ((err = av_interleaved_write_frame(ofmt_ctx, &videoPkt)) < 0) {
+                throw std::exception("Failed to mux packet");
+                av_packet_unref(&videoPkt);
+                break;
+            }
+            av_packet_unref(&videoPkt);
+        }
+
+        av_write_trailer(ofmt_ctx);
+    }();
+
+    if (ifmt_ctx) {
+        avformat_close_input(&ifmt_ctx);
+    }
+    if (ofmt_ctx && !(ofmt_ctx->oformat->flags & AVFMT_NOFILE)) {
+        avio_closep(&ofmt_ctx->pb);
+    }
+    if (ofmt_ctx) {
+        avformat_free_context(ofmt_ctx);
+    }
+}
+
+const char *CaptureThread::filename()
+{
+    return m_b1.constData();
+}
+
+const char *CaptureThread::tempfilename()
+{
+    return m_b2.constData();
+}
+
+void CaptureThread::Clear()
+{
+    if (videoFrame) {
+        av_frame_free(&videoFrame);
+    }
+    if (cctx) {
+        avcodec_free_context(&cctx);
+    }
+    if (ofctx) {
+        avformat_free_context(ofctx);
+    }
+    if (swsCtx) {
+        sws_freeContext(swsCtx);
+    }
+    m_updatetimer.stop();
+}
+
+QImage CaptureThread::CaptureScreen(QScreen* screen)
+{
     QPixmap pixmap = screen->grabWindow(0);
-    PerfomanceTimer::getInstance()->elapsed("Sreenshot_grabbing");
     QPixmap pixmap_cursor(":/images/cursor.png");
     QPainter painter(&pixmap);
     QPoint p = QCursor::pos();
     p.setX(p.x() - 32);
     p.setY(p.y() - 32);
     painter.drawPixmap(p, pixmap_cursor);
-    PerfomanceTimer::getInstance()->elapsed("Draw_cursor");
-    QImage image (pixmap.toImage());
-    PerfomanceTimer::getInstance()->elapsed("Screenshot_to_image");
-    return image;
+
+    return pixmap.toImage();
 }
 
-QImage CaptureThread::CaptureWindow(QScreen* screen, HWND hwnd) {
+QImage CaptureThread::CaptureWindow(QScreen* screen, HWND hwnd)
+{
     QPixmap pixmap = screen->grabWindow((WId)hwnd);
-    QCursor cur(Qt::ArrowCursor);// = w.cursor();
+    QCursor cur(Qt::ArrowCursor);
     QPixmap pixmap_cursor(":/images/cursor.png");
     QPainter painter(&pixmap);
     QPoint p = QCursor::pos();
@@ -136,11 +448,22 @@ QImage CaptureThread::CaptureWindow(QScreen* screen, HWND hwnd) {
     p.setX(p.x() - rect.left - 32);
     p.setY(p.y() - rect.top - 32);
     painter.drawPixmap(p,pixmap_cursor);
-    QImage image (pixmap.toImage());
-    return image;
+    return pixmap.toImage();
 }
 
-QImage CaptureThread::fixAspectRatio(QImage img) {
+qint64 CaptureThread::getShotTimeout()
+{
+    return (1000 / getShotsPerSecond());
+}
+
+int CaptureThread::getShotsPerSecond()
+{
+    return BackEnd::getInstance()->shotsPerSecond();
+}
+
+// copies QImage
+QImage CaptureThread::fixAspectRatio(QImage img)
+{
     // Possible but not major performance loss here
     m_cropmode = BackEnd::getInstance()->cropIndex();
     qreal asp2 = (qreal)img.width()/img.height();
@@ -154,53 +477,32 @@ QImage CaptureThread::fixAspectRatio(QImage img) {
     }
 }
 
+int CaptureThread::status()
+{
+    return m_status;
+}
+
+void CaptureThread::setStatus(int value)
+{
+    m_status = value;
+    emit statusChanged();
+}
+
+bool CaptureThread::sleeping()
+{
+    return m_sleepflag;
+}
+
 void CaptureThread::update()
 {
+    CheckWindow();
     emit requestVector(m_windowHandles);
 }
 
-void CaptureThread::checkSleeping(bool makeSleeping) {
+void CaptureThread::checkSleeping(bool makeSleeping)
+{
     if (m_sleepflag != makeSleeping) {
         m_sleepflag = makeSleeping;
-        emit sleepingSignal(m_sleepflag);
+        emit sleepingChanged();
     }
 }
-
-QImage CaptureThread::CaptureScreen2(QScreen* screen) {
-    // get the device context of the screen
-    const wchar_t* dcName = L"DISPLAY";
-
-    HDC hScreenDC = CreateDC(dcName, nullptr, nullptr, nullptr);
-    // and a device context to put it in
-    HDC hMemoryDC = CreateCompatibleDC(hScreenDC);
-
-    int width = GetDeviceCaps(hScreenDC, HORZRES);
-    int height = GetDeviceCaps(hScreenDC, VERTRES);
-
-    // maybe worth checking these are positive values
-    HBITMAP hBitmap = CreateCompatibleBitmap(hScreenDC, width, height);
-
-    QImage image(QtWin::imageFromHBITMAP(hScreenDC, hBitmap, width, height));
-
-    // get a new bitmap
-    HBITMAP hOldBitmap = (HBITMAP) SelectObject(hMemoryDC, hBitmap);/**/
-
-    PerfomanceTimer::getInstance()->elapsed("Capturing bitmap");
-
-    BitBlt(hMemoryDC, 0, 0, width, height, hScreenDC, 0, 0, SRCCOPY);
-    hBitmap = (HBITMAP) SelectObject(hMemoryDC, hOldBitmap);
-
-    PerfomanceTimer::getInstance()->elapsed("BitBlt");
-
-    //QImage image(QtWin::imageFromHBITMAP( hBitmap));
-
-    PerfomanceTimer::getInstance()->elapsed("Creating QImage");
-
-    // clean up
-    DeleteDC(hMemoryDC);
-    DeleteDC(hScreenDC);
-
-    return image;
-    // now your image is held in hBitmap. You can save it or do whatever with it
-}
-

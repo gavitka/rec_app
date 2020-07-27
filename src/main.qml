@@ -77,7 +77,7 @@ ApplicationWindow {
                                     BackEnd.stopRecording()
                                 }
                             }
-                        }
+                        } // RecButton
                         PauseButton {
                             id: pausebutton
                             width: 50
@@ -383,7 +383,9 @@ ApplicationWindow {
                             font.pointSize: 16
                             font.weight: Font.DemiBold
                         }
-                        RefreshButton { }
+                        RefreshButton {
+                            onClicked: appListView.model.refresh()
+                        }
                     } // RowLayout
                     Label {
                         Layout.fillWidth: true
@@ -394,6 +396,7 @@ ApplicationWindow {
                         wrapMode: Text.WordWrap
                     }
                     AppList {
+                        id: appListView
                         Layout.fillWidth: true
                         height: 350
                     }

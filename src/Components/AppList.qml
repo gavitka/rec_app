@@ -17,8 +17,8 @@ ListView {
     delegate: CheckDelegate {
         text: model.text
         checked: model.selected
-        width: parent.width
-        onCheckedChanged: {
+        width: appListView.width
+        onClicked: {
             appListView.model.select(index);
         }
     } // CheckDelegate

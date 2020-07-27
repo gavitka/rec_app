@@ -55,13 +55,13 @@ add_executable(${PROJECT_NAME} WIN32
     src/capturethread.cpp
     src/capturethread.h
     src/kheventfilter.h
-    src/VideoCapture.cpp
-    src/VideoCapture.h
     src/perfomancetimer.cpp
     src/perfomancetimer.h
     src/applist.cpp
     src/applist.h
     src/pch.h
+    src/lib.h
+    src/lib.cpp
 
     README.md
     installer/installer.nsi
@@ -145,6 +145,17 @@ target_link_libraries(${PROJECT_DLL} Qt5::Core)
 
 # set startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+
+get_target_property(_qmake_executable Qt5::qmake IMPORTED_LOCATION)
+get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
+find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E
+        env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
+            "$<TARGET_FILE:${PROJECT_NAME}>" ARGS --qmldir ${CMAKE_SOURCE_DIR}/src/
+    COMMENT "Running windeployqt..."
+)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
 

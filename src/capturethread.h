@@ -8,8 +8,39 @@
 #include <QElapsedTimer>
 #include <QDebug>
 
-
 #include "backend.h"
+
+extern "C"
+{
+    #include <libavcodec/avcodec.h>
+    #include <libavcodec/avfft.h>
+    #include <libavdevice/avdevice.h>
+    #include <libavfilter/avfilter.h>
+    #include <libavfilter/buffersink.h>
+    #include <libavfilter/buffersrc.h>
+    #include <libavformat/avformat.h>
+    #include <libavformat/avio.h>
+    #include <libavutil/opt.h>
+    #include <libavutil/common.h>
+    #include <libavutil/channel_layout.h>
+    #include <libavutil/imgutils.h>
+    #include <libavutil/mathematics.h>
+    #include <libavutil/samplefmt.h>
+    #include <libavutil/time.h>
+    #include <libavutil/opt.h>
+    #include <libavutil/pixdesc.h>
+    #include <libavutil/file.h>
+    #include <libswscale/swscale.h>
+}
+
+#define VIDEO_TMP_FILE "tmp.h264"
+#define FINAL_FILE_NAME "record.mp4"
+
+enum RECORD_STATUS{
+    Idle,
+    Rec,
+    Pause
+};
 
 class CaptureThread : public QThread
 {
@@ -19,72 +50,72 @@ public:
     CaptureThread();
     ~CaptureThread();
 
-    void run();
-    void Stop() {
-        if(isPaused()) togglepause();
-        this->m_stop = true;
-    }
+    void togglepause();
 
-    void togglepause() {
-        this->m_pause = this->m_pause ? false : true;
-    }
+    bool isPaused();
 
-    bool isPaused() {
-        return m_pause;
-    }
+    HWND getHwnd();
+    void setHwnd(HWND value);
 
-    HWND getHwnd(){return m_hwnd;}
-    void setHwnd(HWND value){
-        m_hwnd = value;
-    }
+    void kick();
 
-    void kick() {
-        m_timer.restart();
-    }
-
-    int FPS(){return m_currentFPS;}
+    int FPS();
 
     static QImage CaptureScreen(QScreen* screen);
-    static QImage CaptureScreen2(QScreen* screen);
     static QImage CaptureWindow(QScreen* screen, HWND hwnd);
 
-    qint64 getShotTimeout(){
-        return (1000 / getShotsPerSecond());
-    }
+    qint64 getShotTimeout();
 
-    int getShotsPerSecond(){
-        return BackEnd::getInstance()->shotsPerSecond();
-    }
+    int getShotsPerSecond();
 
-    qint64 getRemainingTime() {
 
-    }
+    int status();
+    void setStatus(int value);
 
-    QImage fixAspectRatio(QImage img);
+    bool sleeping();
 
 public slots:
 
+    void start();
+    void stop();
     void update();
+    void Finish();
 
 signals:
 
-    void resultReady();
     void errorHappened();
-    void sleepingSignal(bool sleepflag);
+    void sleepingChanged();
     void requestVector(std::vector<HWND> *vector);
+    void finished();
+    void statusChanged();
+
+    void InstallHook(std::vector<HWND>* vector);
+    void UninstallHook();
 
 private:
 
     void checkSleeping(bool makeSleeping);
+    bool CheckWindow();
 
-    bool m_stop;
-    bool m_pause;
+    void Init();
+    void Clear();
+
+    void Capture();
+    void CaptureFrame();
+
+    void Free();
+    void Remux();
+
+    const char *filename();
+    const char *tempfilename();
+
+    QImage fixAspectRatio(QImage img);
+
+    bool m_stop = false;
+    bool m_pause = false;
     HWND m_hwnd;
     QScreen* m_screen;
-    //int m_shots_per_second;
-    //qint64 m_shotTimeOut;
     int m_recMode;
-    QElapsedTimer m_timer;
     int m_currentFPS = 0;
 
     int m_width;
@@ -93,11 +124,29 @@ private:
     int m_fps;
     int m_bitRate;
     int m_cropmode;
-    bool m_sleepflag;
+    bool m_sleepflag = false;
 
-    QByteArray m_filenameb;
-    const char* m_filename;
     std::vector<HWND>* m_windowHandles;
-    //QMutex mux;
+
+    QElapsedTimer m_sleeptimer;
     QTimer m_updatetimer;
+
+    AVCodecContext *cctx = nullptr;
+    SwsContext *swsCtx = nullptr;
+    AVCodec *codec = nullptr;
+    AVOutputFormat *oformat = nullptr;
+    AVFormatContext *ofctx = nullptr;
+    AVStream *videoStream = nullptr;
+    AVFrame *videoFrame = nullptr;
+
+    QByteArray m_b1;
+    QByteArray m_b2;
+
+    int frameCounter;
+
+    int fps;
+    int lastimagewidth;
+    int lastimageheight;
+
+    int m_status;
 };

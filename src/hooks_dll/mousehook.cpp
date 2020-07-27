@@ -45,20 +45,23 @@ HMODULE WINAPI ModuleFromAddress(PVOID pv) {
 
 LRESULT CALLBACK MultiHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
+    qDebug() << "MultiHookProc";
     if (nCode < 0 || nCode == HC_NOREMOVE) {
         return CallNextHookEx(g_hHook, nCode, wParam, lParam);
     }
+
     if(g_targets->size() == 0) {
         PostMessage(g_hWnd, WM_KEYSTROKE, wParam, lParam);
     }
-    for(auto t : *g_targets) {
-        if((HWND)t == GetForegroundWindow())
-        {
-            qDebug() << "kicking";
-            PostMessage(g_hWnd, WM_KEYSTROKE, wParam, lParam);
+    else
+    {
+        for(auto t : *g_targets) {
+            if((HWND)t == GetForegroundWindow())
+            {
+                PostMessage(g_hWnd, WM_KEYSTROKE, wParam, lParam);
+            }
         }
     }
-
     return CallNextHookEx(g_hHook, nCode, wParam, lParam);
 }
 

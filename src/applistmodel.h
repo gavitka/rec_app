@@ -30,6 +30,7 @@ public slots:
 
     void select(int i);
     void dataChangedSlot();
+    void refresh();
 
 private:
 

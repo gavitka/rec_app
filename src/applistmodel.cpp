@@ -35,7 +35,7 @@ void AppListModel::setAppList(AppList* value)
 {
     m_applist = value;
     connect(m_applist, &AppList::listUpdated, this, &AppListModel::dataChangedSlot);
-    emit dataChangedSlot();
+    dataChangedSlot();
 }
 
 void AppListModel::select(int i)
@@ -50,7 +50,14 @@ void AppListModel::select(int i)
 
 void AppListModel::dataChangedSlot()
 {
-    QModelIndex topLeft = QAbstractItemModel::createIndex(0, 0);;
-    QModelIndex bottomRight = QAbstractItemModel::createIndex(m_applist->size()-1, 0);;
+    QModelIndex topLeft = QAbstractItemModel::createIndex(0, 0);
+    QModelIndex bottomRight = QAbstractItemModel::createIndex(m_applist->size()-1, 0);
     emit dataChanged(topLeft, bottomRight, QVector<int>());
+    beginResetModel();
+    endResetModel();
+}
+
+void AppListModel::refresh()
+{
+    m_applist->update();
 }

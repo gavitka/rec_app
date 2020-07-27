@@ -17,16 +17,13 @@
 #include <QRandomGenerator>
 #include <QElapsedTimer>
 #include <QScreen>
+#include <QThread>
 
 #include "applistmodel.h"
 
-class CaptureThread;
+#include "CaptureThread.h"
 
-enum RECORD_STATUS{
-    Idle,
-    Rec,
-    Pause
-};
+class CaptureThread;
 
 enum RECORD_MODE {
     Screen,
@@ -62,23 +59,23 @@ class BackEnd : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(bool lockParam READ lockParam NOTIFY lockParamChanged)
+    Q_PROPERTY(bool lockParam READ lockParam NOTIFY statusChanged)
+    Q_PROPERTY(QString recordingState READ recordingState NOTIFY statusChanged)
+    Q_PROPERTY(bool isRecording READ isRecording NOTIFY statusChanged)
+    Q_PROPERTY(QString statusLine READ statusLine NOTIFY timeChanged)
+    Q_PROPERTY(QString recordingTime READ recordingTime NOTIFY timeChanged)
+
     Q_PROPERTY(QList<QObject*> windowList READ windowList NOTIFY windowListChanged)
+
     Q_PROPERTY(int windowIndex READ windowIndex WRITE setWindowIndex NOTIFY windowIndexChanged)
-    Q_PROPERTY(int mouseX READ mouseX WRITE setMouseX NOTIFY mouseXChanged)
-    Q_PROPERTY(int mouseY READ mouseY WRITE setMouseX NOTIFY mouseYChanged)
     Q_PROPERTY(bool recMode READ recMode WRITE setRecMode NOTIFY recModeChanged)
     Q_PROPERTY(QString filePrefix READ filePrefix WRITE setFilePrefix NOTIFY filePrefixChanged)
-    Q_PROPERTY(QString recordingState READ recordingState NOTIFY recordingStateChanged)
-    Q_PROPERTY(QString recordingTime READ recordingTime NOTIFY recordingTimeChanged)
     Q_PROPERTY(QString filePath READ filePath WRITE setFilePathUrl NOTIFY filePathChanged)
     Q_PROPERTY(QString fileUrl READ fileUrl NOTIFY filePathChanged)
     Q_PROPERTY(QString fileLabel READ fileLabel NOTIFY filePathChanged)
     Q_PROPERTY(QString imageSource READ imageSource WRITE setImageSource NOTIFY imageSourceChanged)
     Q_PROPERTY(bool sleepMode READ sleepMode WRITE setSleepMode NOTIFY sleepModeChanged)
-    Q_PROPERTY(QString statusLine READ statusLine NOTIFY statusLineChanged)
     Q_PROPERTY(bool recordReady READ recordReady NOTIFY recordReadyChanged)
-    Q_PROPERTY(bool isRecording READ isRecording NOTIFY recordingStateChanged)
 
     Q_PROPERTY(QList<QObject*> resolutionList READ resolutionList NOTIFY resolutionListChanged)
     Q_PROPERTY(int resolutionIndex READ resolutionIndex WRITE setResolutionIndex NOTIFY resolutionIndexChanged)
@@ -89,6 +86,10 @@ class BackEnd : public QObject
     Q_PROPERTY(QList<QObject*> frameRateList READ frameRateList NOTIFY frameRateListChanged)
     Q_PROPERTY(int frameRateIndex READ frameRateIndex WRITE setFrameRateIndex NOTIFY frameRateIndexChanged)
     Q_PROPERTY(AppList* appList READ appList)
+
+
+    Q_PROPERTY(int mouseX READ mouseX WRITE setMouseX NOTIFY mousePosChanged)
+    Q_PROPERTY(int mouseY READ mouseY WRITE setMouseX NOTIFY mousePosChanged)
 
 public:
 
@@ -102,144 +103,62 @@ public:
     BackEnd(QObject *parent = nullptr);
     ~BackEnd();
 
-    void kick();
-
     // ----------------- <PROP>  -----------------
 
     QString startButtonText();
 
-    int mouseX(){return m_mousex;}
-    void setMouseX(int value){m_mousex = value; emit mouseXChanged();}
-
-    int mouseY(){return m_mousey;}
-    void setMouseY(int value){m_mousey = value; emit mouseYChanged();}
-
     bool lockParam();
 
-    int recordStatus(){return m_record_status;}
-    void setRecordStatus(int value){
-        m_record_status = value;
-        emit recordingStateChanged();
-        refreshUI();
-    }
+    int recordStatus();
 
     bool recMode();
     void setRecMode(bool value);
 
-    int recordMode(){return m_recMode;}
-    void setRecordMode(int value){
-        m_recMode = value;
-        emit recModeChanged();
-    }
+    int recordMode();
+    void setRecordMode(int value);
 
-    QList<QObject*> windowList() {
-        return m_dataList;
-    }
+    QList<QObject*> windowList();
 
-    int windowIndex() {
-        return m_windowIndex;
-    }
+    int windowIndex();
     void setWindowIndex(int value);
 
-    HWND getHwnd(){return m_hwnd;}
+    HWND getHwnd();
 
     QString filePrefix();
     void setFilePrefix(QString value);
 
-    QString recordingState()
-    {
-        if(this->recordStatus() == RECORD_STATUS::Idle) {
-            return "Ready";
-        } else if (this->recordStatus() == RECORD_STATUS::Rec) {
-            return "Recording";
-        } else if (this->recordStatus() == RECORD_STATUS::Pause) {
-            return "Recording paused";
-        }
-        return "Unknown";
-    }
+    QString recordingState();
 
     QString recordingTime();
 
-    QString filePath() {
-        return m_filePath.absolutePath();
-    }
-    void setFilePathUrl(QString value) {
-        QUrl u = QUrl(value);
-        setFilePath(u.toLocalFile());
-    }
-    void setFilePath(QString value) {
-        QDir d = QDir(value);
-        if(d.exists()) {
-            m_filePath = d.absolutePath();
-            m_settings.setValue("filePath", m_filePath.absolutePath());
-            emit filePathChanged();
-        } else if(m_filePath.isEmpty()) {
-            m_filePath = d.homePath();
-            emit filePathChanged();
-        }
-    }
+    QString filePath();
 
-    QString fileUrl() {
-        QUrl u;
-        u = u.fromLocalFile(m_filePath.absolutePath());
-        QString s = u.toString();
-        return s;
-    }
+    void setFilePathUrl(QString value);
+    void setFilePath(QString value);
 
-    QString fileName() {
-        QString filename;
-        QDir d;
-        int i = 0;
-        filename = filePath() + d.separator() + filePrefix() + ".mp4";
-        while(checkfilename(filename) && i <1000) {
-            filename = filePath() + d.separator() + filePrefix() + "_" + QString::number(i) + ".mp4";
-            ++i;
-        }
-        return filename;
-    }
+    QString fileUrl();
 
-    QString fileLabel() {
-        QString s = "<a href=\"" + fileUrl() + "\">" + filePath() + "</a>";
-        qDebug().noquote() << "Hyperlink" << s;
-        return s;
-    }
+    QString fileName();
 
-    bool checkfilename(QString filename){
-        QFile f(filename);
-        return f.exists();
-    }
+    QString fileLabel();
 
-    QString imageSource() {return m_imageSource;}
-    void setImageSource(QString value) {
-        int x = QRandomGenerator::global()->generate();
-        m_imageSource = value + QString::number(x);
-        emit imageSourceChanged();
-    }
+    bool checkfilename(QString filename);
 
-    bool sleepMode() {return m_sleepMode;}
-    void setSleepMode(bool value) {
-        m_sleepMode = value;
-        m_settings.setValue("sleepMode", value);
-        emit sleepModeChanged();
-    }
+    QString imageSource();
+    void setImageSource(QString value);
 
-    QList<QObject*> resolutionList() {
-        return m_resolutionList;
-    }
-    QList<QObject*> cropList() {
-        return m_cropList;
-    }
-    QList<QObject*> bitRateList() {
-        return m_bitRateList;
-    }
-    QList<QObject*> frameRateList() {
-        return m_frameRateList;
-    }
+    bool sleepMode();
+    void setSleepMode(bool value);
+
+    QList<QObject*> resolutionList();
+    QList<QObject*> cropList();
+    QList<QObject*> bitRateList();
+    QList<QObject*> frameRateList();
 
     int resolutionIndex() {return m_resolutionIndex;}
     void setResolutionIndex(int value);
 
-    int cropIndex() {return m_cropIndex;}
+    int cropIndex();
     void setCropIndex(int value);
 
     int bitRateIndex() {return m_bitRateIndex;}
@@ -248,55 +167,51 @@ public:
     int frameRateIndex() {return m_frameRateIndex;}
     void setFrameRateIndex(int value);
 
-    QString statusLine() {
-        QString s;
-        QFileInfo d(fileName());
-        s = "Current File: " + d.fileName();
-        return s;
-    }
+    QString statusLine();
 
-    bool recordReady() {
-        if(recordMode() == RECORD_MODE::Screen)
-            return true;
-        if(recordMode() == RECORD_MODE::Window && getHwnd() != nullptr)
-            return true;
-        return false;
-    }
+    bool recordReady();
 
-    bool isRecording() {
-        if(this->recordStatus() == RECORD_STATUS::Rec) return true;
-        else return false;
-    }
+    bool isRecording();
+
+    int mouseX();
+    void setMouseX(int value);
+
+    int mouseY();
+    void setMouseY(int value);
 
     // ----------------- </PROP>  -----------------
 
     AppList* appList();
 
-    QSettings* getSettings(){return &m_settings;}
+    QSettings *getSettings();
     qint64 getElapsedTime();
-    QImage imgPreview() {return m_imgpreview;}
+    QImage imgPreview();
 
-    int framesPerSecond() {return m_framesPerSecond;}
+    int framesPerSecond();
 
-    int bitRate() {return m_bitRate;}
+    int bitRate();
 
-    int shotsPerSecond() {return m_shotsPerSecond;}
+    int shotsPerSecond();
 
-    int getWidth() {return m_width;}
-    int getHeight() {return m_height;}
+    int getWidth();
+    int getHeight();
 
     void refreshImage();
+    void kick();
 
 signals:
 
-    void lockParamChanged();
+    void statusChanged();
+    void timeChanged();
+
     void windowListChanged();
     void windowIndexChanged();
-    void mouseXChanged();
-    void mouseYChanged();
+
+    void mousePosChanged();
+
     void recModeChanged();
     void filePrefixChanged();
-    void recordingStateChanged();
+
     void recordingTimeChanged();
     void filePathChanged();
     void imageSourceChanged();
@@ -314,25 +229,34 @@ signals:
     void isRecordingChanged();
     void closeReady();
 
+    void recordStatusChanged();
+    void stopSignal();
+    void startSignal();
+
 public slots:
+
+    void statusChangedSlot();
 
     void startRecording();
     void pauseRecording();
     void stopRecording();
+
     void handleResults();
-    void handleError();
+
     void refreshUI();
     void getWindowsList();
-    void timerUpdate();
+    void timerUpdateSlot();
     QScreen* getScreen(){return m_screen;}
-    void handleSleeping(bool sleeping);
+    void sleepingChangedSlot();
     void close();
+
+    void InstallHook(std::vector<HWND>* vector);
+    void UninstallHook();
 
 private:
 
     static BackEnd* m_instance;
     QString m_output_text;
-    CaptureThread* m_thr;
     int m_width;
     int m_height;
     int m_mousex;
@@ -341,18 +265,18 @@ private:
     int m_shotsPerSecond = 3;
     bool m_lockParam;
     int m_record_status;
-    int m_recMode;
+    int m_recMode = RECORD_MODE::Screen;
     int m_bitRate;
     QString m_outFileName;
     QList<QObject*> m_dataList;
     int m_windowIndex;
     HWND m_hwnd;
     QSettings m_settings;
-    QString m_filePrefix;
+    QString m_filePrefix = "prefix";
     QTimer* m_timer;
     QDir m_filePath;
     QElapsedTimer m_recordTimer;
-    qint64 m_elapsedTime;
+    qint64 m_recordTime = 0;
     QImage m_imgpreview;
     QScreen* m_screen;
     QString m_imageSource;
@@ -366,9 +290,12 @@ private:
     int m_bitRateIndex;
     int m_frameRateIndex;
     QString m_windowName;
-    bool m_sleepingflag;
+    bool m_sleepingflag = false;
     bool m_windowCloseFlag = false;
     AppList* m_appList = nullptr;
+
+    CaptureThread* m_capture = nullptr;
+    QThread m_thread;
 };
 
 class WindowObject : public QObject
