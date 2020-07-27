@@ -24,19 +24,17 @@ CaptureThread::CaptureThread():
 
     m_currentFPS = getShotsPerSecond();
 
-    m_windowHandles = new std::vector<HWND>();
+    m_backEnd = BackEnd::getInstance();
 
-    BackEnd* backEnd = BackEnd::getInstance();
+    m_fps =                 m_backEnd->framesPerSecond();
+    m_width =               m_backEnd->getWidth();
+    m_height =              m_backEnd->getHeight();
+    m_cropmode =            m_backEnd->cropIndex();
+    m_recMode =             m_backEnd->recordMode();
+    m_hwnd =                m_backEnd->getHwnd(); // check no window
+    m_bitRate =             m_backEnd->bitRate();
 
-    m_fps =                 backEnd->framesPerSecond();
-    m_width =               backEnd->getWidth();
-    m_height =              backEnd->getHeight();
-    m_cropmode =            backEnd->cropIndex();
-    m_recMode =             backEnd->recordMode();
-    m_hwnd =                backEnd->getHwnd();
-    m_bitRate =             backEnd->bitRate();
-
-    QString filename =      backEnd->fileName();
+    QString filename =      m_backEnd->fileName();
     m_b1 = filename.toLatin1();
 
     QString tempfilename = QDir().tempPath() + QDir::separator() + "tmp.h264";
@@ -96,9 +94,11 @@ int CaptureThread::FPS(){return m_currentFPS;}
 
 bool CaptureThread::CheckWindow()
 {
-    for(auto t : *m_windowHandles) {
-        if(t == GetForegroundWindow())
-        {
+    HWND t = GetForegroundWindow();
+    for(HWND w : *m_backEnd->windowVector()) {
+        if(w == t && w!= m_hwnd) {
+            qDebug() << "change window";
+            m_hwnd = w;
             return true;
         }
     }
@@ -109,7 +109,6 @@ void CaptureThread::Init()
 {
     m_updatetimer.setInterval(1000);
     connect(&m_updatetimer, &QTimer::timeout, this, &CaptureThread::update, Qt::DirectConnection);
-    connect(this, &CaptureThread::requestVector, (BackEnd::getInstance())->appList(), &AppList::updateVector, Qt::DirectConnection);
 
     m_updatetimer.start();
     m_sleeptimer.start();
@@ -127,7 +126,7 @@ void CaptureThread::Init()
     m_hwnd =        backEnd->getHwnd();
     m_bitRate =     backEnd->bitRate();
 
-    emit InstallHook(m_windowHandles);
+    emit InstallHook();
 
     int err;
 
@@ -246,10 +245,14 @@ void CaptureThread::CaptureFrame()
 {
     QImage image;
     if(m_recMode == RECORD_MODE::Window) {
+        qDebug() << "m_hwnd" << m_hwnd;
+        if(!IsWindow(m_hwnd)) return;
         image = CaptureWindow(m_screen, m_hwnd);
     } else {
         image = CaptureScreen(m_screen);
     }
+
+    image = fixAspectRatio(image);
 
     int err;
     if (!videoFrame) {
@@ -496,7 +499,8 @@ bool CaptureThread::sleeping()
 void CaptureThread::update()
 {
     CheckWindow();
-    emit requestVector(m_windowHandles);
+    emit updateVector();
+    //emit requestVector(m_windowHandles);
 }
 
 void CaptureThread::checkSleeping(bool makeSleeping)

@@ -199,6 +199,8 @@ public:
     void refreshImage();
     void kick();
 
+    std::vector<HWND> *windowVector();
+
 signals:
 
     void statusChanged();
@@ -250,8 +252,9 @@ public slots:
     void sleepingChangedSlot();
     void close();
 
-    void InstallHook(std::vector<HWND>* vector);
+    void InstallHook();
     void UninstallHook();
+    void updateVectorSlot();
 
 private:
 
@@ -296,6 +299,7 @@ private:
 
     CaptureThread* m_capture = nullptr;
     QThread m_thread;
+    std::vector<HWND>* m_windowHandles;
 };
 
 class WindowObject : public QObject

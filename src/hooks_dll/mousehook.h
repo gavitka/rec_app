@@ -17,6 +17,8 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 
 extern "C" MOUSEHOOK_API LRESULT CALLBACK MultiHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
-MOUSEHOOK_API void InstallMultiHook(HWND hwndCaller, std::vector<HWND>* targets);
+MOUSEHOOK_API void InstallMultiHook(HWND hwndCaller);
 
 MOUSEHOOK_API void UninstallMultiHook();
+
+MOUSEHOOK_API void UpdateWindowsList(std::vector<HWND>* vector);

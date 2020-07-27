@@ -52,6 +52,8 @@ BackEnd::BackEnd(QObject *parent) :
     m_settings("Gavitka software", "Time lapse recorder"),
     m_recordTimer()
 {
+    m_windowHandles = new std::vector<HWND>;
+
     setFilePath(m_settings.value("filePath").toString());
     setFilePrefix(m_settings.value("filePrefix").toString());
     setBitRateIndex(m_settings.value("bitRate").toInt());
@@ -137,6 +139,7 @@ void BackEnd::startRecording()
     connect(m_capture, &CaptureThread::finished, this, &BackEnd::handleResults);
     connect(m_capture, &CaptureThread::finished, m_capture, &QObject::deleteLater);
 
+    connect(m_capture, &CaptureThread::updateVector, this, &BackEnd::updateVectorSlot);
     connect(m_capture, &CaptureThread::InstallHook, this, &BackEnd::InstallHook);
     connect(m_capture, &CaptureThread::UninstallHook, this, &BackEnd::UninstallHook);
 
@@ -569,10 +572,10 @@ void BackEnd::close() {
     }
 }
 
-void BackEnd::InstallHook(std::vector<HWND>* vector)
+void BackEnd::InstallHook()
 {
 #ifdef HOOKS
-    InstallMultiHook((HWND)wnd->winId(), vector);
+    InstallMultiHook((HWND)wnd->winId());
 #endif
 }
 
@@ -581,6 +584,18 @@ void BackEnd::UninstallHook()
 #ifdef HOOKS
     UninstallMultiHook();
 #endif
+}
+
+void BackEnd::updateVectorSlot()
+{
+    // Ask applist to create window handles
+    m_appList->updateVector(m_windowHandles);
+    // updates windows list in DLL
+    UpdateWindowsList(m_windowHandles);
+}
+
+std::vector<HWND>* BackEnd::windowVector() {
+    return m_windowHandles;
 }
 
 void BackEnd::setWindowIndex(int index)

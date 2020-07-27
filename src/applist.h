@@ -23,9 +23,6 @@ public:
     int size();
     void select(int i);
     void addWindows(QVector<HWND>* add_list);
-
-public slots:
-
     void updateVector(std::vector<HWND>* vector);
 
 private:

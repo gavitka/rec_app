@@ -10,6 +10,8 @@
 
 #include "backend.h"
 
+class BackEnd;
+
 extern "C"
 {
     #include <libavcodec/avcodec.h>
@@ -85,11 +87,11 @@ signals:
 
     void errorHappened();
     void sleepingChanged();
-    void requestVector(std::vector<HWND> *vector);
+    void updateVector();
     void finished();
     void statusChanged();
 
-    void InstallHook(std::vector<HWND>* vector);
+    void InstallHook();
     void UninstallHook();
 
 private:
@@ -126,8 +128,6 @@ private:
     int m_cropmode;
     bool m_sleepflag = false;
 
-    std::vector<HWND>* m_windowHandles;
-
     QElapsedTimer m_sleeptimer;
     QTimer m_updatetimer;
 
@@ -149,4 +149,5 @@ private:
     int lastimageheight;
 
     int m_status;
+    BackEnd* m_backEnd;
 };
