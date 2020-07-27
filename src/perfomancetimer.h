@@ -12,14 +12,14 @@ struct PerfomanceTimerPoint {
     float lastTime;
 };
 
-class PerfomanceTimer
+class PerformanceTimer
 {
 
 public:
 
-    static PerfomanceTimer* getInstance() {
+    static PerformanceTimer* getInstance() {
         if(!m_instance) {
-            m_instance = new PerfomanceTimer();
+            m_instance = new PerformanceTimer();
             m_instance->reset();
         }
         return m_instance;
@@ -59,12 +59,12 @@ public:
 
 private:
 
-    explicit PerfomanceTimer()
+    explicit PerformanceTimer()
     {
         m_timer.start();
     }
 
-    static PerfomanceTimer* m_instance;
+    static PerformanceTimer* m_instance;
     QElapsedTimer m_timer;
     qint64 m_lastPointTime;
     int m_lastindex;

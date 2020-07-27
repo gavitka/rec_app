@@ -25,13 +25,14 @@
 
 #include "capturethread.h"
 #include "hooks_dll/mousehook.h"
+#include "blwindow.h"
 
 #define HOOKS
 //#undef HOOKS
 
 BackEnd* BackEnd::m_instance = nullptr;
 
-extern QWindow* wnd;
+extern BLWindow* wnd;
 
 QObject *BackEnd::qmlInstance(QQmlEngine *engine, QJSEngine *scriptEngine) {
     Q_UNUSED(engine)
@@ -128,6 +129,8 @@ QString BackEnd::startButtonText()
 void BackEnd::startRecording()
 {
     if(recordStatus() != RECORD_STATUS::Idle) return;
+
+    if(m_recMode == RECORD_MODE::Window && m_appList->size() <= 0) return;
 
     m_capture = new CaptureThread();
     m_capture->moveToThread(&m_thread);

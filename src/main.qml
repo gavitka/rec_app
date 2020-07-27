@@ -4,13 +4,12 @@ import QtQuick.Layouts 1.12
 import QtQuick.Controls 2.12
 import QtQuick.Controls.Universal 2.12
 import Qt.labs.settings 1.0
-import io.qt.examples.backend 1.0
 import kh.components 1.0
 
 import Theme 1.0
 import "Components"
 
-ApplicationWindow {
+BLWindow {
     visible: true
     width: 500
     height: 600
@@ -18,11 +17,6 @@ ApplicationWindow {
     minimumWidth: 500
     title: qsTr("Time lapse recording app")
     id:wnd
-    //flags: Qt.Window | Qt.FramelessWindowHint
-    // Qt.MSWindowsFixedSizeDialogHint
-    // Qt.WindowStaysOnTopHint
-
-    //TODO: FramelessWindow
 
     Settings {
         property alias x: wnd.x
@@ -31,21 +25,21 @@ ApplicationWindow {
         property alias height: wnd.height
     }
 
-    onClosing: {
-        if(BackEnd.isRecording == true){
-            console.log("deny closing");
-            close.accepted = false;
-            BackEnd.close();
-        }
-    }
+//    onClosing: {
+//        if(BackEnd.isRecording == true){
+//            console.log("deny closing");
+//            close.accepted = false;
+//            BackEnd.close();
+//        }
+//    }
 
-    Connections {
-        target: BackEnd
-        function onCloseReady() {
-            console.log("ready closing");
-            wnd.close();
-        }
-    }
+//    Connections {
+//        target: BackEnd
+//        function onCloseReady() {
+//            console.log("ready closing");
+//            wnd.close();
+//        }
+//    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -55,6 +49,40 @@ ApplicationWindow {
                 implicitWidth: wnd.width
                 implicitHeight: 200
                 color: Theme.background_color
+
+                Image {
+                    anchors.fill:parent
+                    fillMode: Image.Stretch
+                    source: "qrc:/images/back.png"
+                }
+
+                RowLayout {
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    Layout.alignment: Qt.AlignRight
+                    spacing: 0
+                    AppButton {
+                        Layout.preferredWidth: 46
+                        Layout.preferredHeight: 30
+                        src:"qrc:/images/collapse.png"
+                        onClicked: wnd.showMinimized()
+                        }
+                    AppButton {
+                        Layout.preferredWidth: 46
+                        Layout.preferredHeight: 30
+                        src: (wnd.visibility === 4) ? "qrc:/images/restore.png" :  "qrc:/images/full.png"
+                        onClicked: (wnd.visibility === 4) ? wnd.showNormal() : wnd.showMaximized()
+                        }
+                    AppButton {
+                        Layout.preferredWidth: 46
+                        Layout.preferredHeight: 30
+                        hoverColor: Theme.close_hover
+                        src:"qrc:/images/close.png"
+                        onClicked: {
+                                wnd.close();
+                            }
+                        }
+                }// RowLayout
 
                 RowLayout {
                     spacing: 30

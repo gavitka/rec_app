@@ -13,9 +13,10 @@ videos of digital artwork. For Windows only.
 
 - [ ] Update UI for window selection
 - [ ] Get rid of pesky QML binding loops
-- [ ] Refactor usage of QThread
 - [ ] Implement frameless window
+- [ ] Add more window information
+- [x] Refactor usage of QThread
 
 ## Screenshot
 
-![image](https://user-images.githubusercontent.com/28277100/88225440-29094480-cc73-11ea-8102-bcb9131028bc.png)
+![image](https://user-images.githubusercontent.com/28277100/88574246-b15c6080-d04a-11ea-92a8-74b62826e1d2.png)

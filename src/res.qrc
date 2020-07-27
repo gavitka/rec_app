@@ -9,13 +9,17 @@
         <file>Components/TopButton.qml</file>
         <file>Components/RefreshButton.qml</file>
         <file>Components/AppList.qml</file>
-        <file>../images/close.png</file>
-        <file>../images/minimize.png</file>
+        <file>Components/AppButton.qml</file>
         <file>../images/logo.ico</file>
         <file>../images/square_icon.png</file>
         <file>../images/cursor.png</file>
         <file>../images/pause_icon.png</file>
         <file>../images/record_icon.png</file>
         <file>../images/refresh.png</file>
+        <file>../images/collapse.png</file>
+        <file>../images/restore.png</file>
+        <file>../images/close.png</file>
+        <file>../images/full.png</file>
+        <file>../images/back.png</file>
     </qresource>
 </RCC>

@@ -12,8 +12,9 @@
 #include "hooks_dll/mousehook.h"
 #include "perfomancetimer.h"
 #include "windows.h"
+#include "blwindow.h"
 
-extern QWindow* wnd;
+extern BLWindow* wnd;
 
 CaptureThread::CaptureThread():
     m_updatetimer(this)
@@ -58,13 +59,15 @@ void CaptureThread::start()
     }
 }
 
-void CaptureThread::stop() {
+void CaptureThread::stop()
+{
     if(m_pause == true)
         m_pause = false;
     m_stop = true;
 }
 
-void CaptureThread::togglepause() {
+void CaptureThread::togglepause()
+{
     this->m_pause = !this->m_pause;
     m_status = this->m_pause ? RECORD_STATUS::Pause : RECORD_STATUS::Rec;
     emit statusChanged();
@@ -74,23 +77,16 @@ bool CaptureThread::isPaused() {
     return m_pause;
 }
 
-HWND CaptureThread::getHwnd()
-{
-    return m_hwnd;
-}
-
-void CaptureThread::setHwnd(HWND value)
-{
-    m_hwnd = value;
-}
-
 void CaptureThread::kick()
 {
     if(m_sleeptimer.elapsed() >= 3000)
         m_sleeptimer.restart();
 }
 
-int CaptureThread::FPS(){return m_currentFPS;}
+int CaptureThread::FPS()
+{
+    return m_currentFPS;
+}
 
 bool CaptureThread::CheckWindow()
 {
@@ -500,7 +496,6 @@ void CaptureThread::update()
 {
     CheckWindow();
     emit updateVector();
-    //emit requestVector(m_windowHandles);
 }
 
 void CaptureThread::checkSleeping(bool makeSleeping)

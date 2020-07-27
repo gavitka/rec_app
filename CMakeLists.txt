@@ -62,6 +62,8 @@ add_executable(${PROJECT_NAME} WIN32
     src/pch.h
     src/lib.h
     src/lib.cpp
+    src/blwindow.h
+    src/blwindow.cpp
 
     README.md
     installer/installer.nsi
@@ -94,68 +96,57 @@ target_compile_definitions(${PROJECT_DLL} PUBLIC MOUSEHOOK_EXPORTS)
 set(CMAKE_EXE_LINKER_FLAGS
     "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMT")
 
-target_link_libraries(${PROJECT_NAME} Qt5::Widgets)
-target_link_libraries(${PROJECT_NAME} Qt5::Core)
-target_link_libraries(${PROJECT_NAME} Qt5::Qml)
-target_link_libraries(${PROJECT_NAME} Qt5::Quick)
-target_link_libraries(${PROJECT_NAME} Qt5::Multimedia)
-target_link_libraries(${PROJECT_NAME} Qt5::WinExtras)
-
-target_link_libraries(${PROJECT_NAME} D:/dev/lib/x264/installed/lib/libx264.lib)
-target_link_libraries(${PROJECT_NAME} D:/dev/lib/ffmpeg_build/prefix/lib/libavcodec.a)
-target_link_libraries(${PROJECT_NAME} D:/dev/lib/ffmpeg_build/prefix/lib/libavdevice.a)
-target_link_libraries(${PROJECT_NAME} D:/dev/lib/ffmpeg_build/prefix/lib/libavfilter.a)
-target_link_libraries(${PROJECT_NAME} D:/dev/lib/ffmpeg_build/prefix/lib/libavformat.a)
-target_link_libraries(${PROJECT_NAME} D:/dev/lib/ffmpeg_build/prefix/lib/libavutil.a)
-target_link_libraries(${PROJECT_NAME} D:/dev/lib/ffmpeg_build/prefix/lib/libpostproc.a)
-target_link_libraries(${PROJECT_NAME} D:/dev/lib/ffmpeg_build/prefix/lib/libswresample.a)
-target_link_libraries(${PROJECT_NAME} D:/dev/lib/ffmpeg_build/prefix/lib/libswscale.a)
-target_link_libraries(${PROJECT_NAME} bcrypt)
-target_link_libraries(${PROJECT_NAME} gdi32)
-target_link_libraries(${PROJECT_NAME} kernel32)
-target_link_libraries(${PROJECT_NAME} user32)
-target_link_libraries(${PROJECT_NAME} winspool)
-target_link_libraries(${PROJECT_NAME} comdlg32)
-target_link_libraries(${PROJECT_NAME} advapi32)
-target_link_libraries(${PROJECT_NAME} shell32)
-target_link_libraries(${PROJECT_NAME} ole32)
-target_link_libraries(${PROJECT_NAME} oleaut32)
-target_link_libraries(${PROJECT_NAME} uuid)
-target_link_libraries(${PROJECT_NAME} odbc32)
-target_link_libraries(${PROJECT_NAME} odbccp32)
-target_link_libraries(${PROJECT_NAME} Ws2_32)
-target_link_libraries(${PROJECT_NAME} Secur32)
-target_link_libraries(${PROJECT_NAME} Strmiids)
-
 # Do i really need to link all this SHIT?
+set(LIBRARIES
+    Qt5::Widgets
+    Qt5::Core
+    Qt5::Qml
+    Qt5::Quick
+    Qt5::Multimedia
+    Qt5::WinExtras
+    dwmapi
+    D:/dev/lib/x264/installed/lib/libx264.lib
+    D:/dev/lib/ffmpeg_build/prefix/lib/libavcodec.a
+    D:/dev/lib/ffmpeg_build/prefix/lib/libavdevice.a
+    D:/dev/lib/ffmpeg_build/prefix/lib/libavfilter.a
+    D:/dev/lib/ffmpeg_build/prefix/lib/libavformat.a
+    D:/dev/lib/ffmpeg_build/prefix/lib/libavutil.a
+    D:/dev/lib/ffmpeg_build/prefix/lib/libpostproc.a
+    D:/dev/lib/ffmpeg_build/prefix/lib/libswresample.a
+    D:/dev/lib/ffmpeg_build/prefix/lib/libswscale.a
+    bcrypt
+    gdi32
+    kernel32
+    user32
+    winspool
+    comdlg32
+    advapi32
+    shell32
+    ole32
+    oleaut32
+    uuid
+    odbc32
+    odbccp32
+    Ws2_32
+    Secur32
+    Strmiids
+    Mf
+    Mfcore
+    Mfplat
+    mfplay
+    mfreadwrite
+    mfsensorgroup
+    Mfsrcsnk
+    mfuuid
+    )
 
-target_link_libraries(${PROJECT_NAME} Mf)
-target_link_libraries(${PROJECT_NAME} Mfcore)
-target_link_libraries(${PROJECT_NAME} Mfplat)
-target_link_libraries(${PROJECT_NAME} mfplay)
-target_link_libraries(${PROJECT_NAME} mfreadwrite)
-target_link_libraries(${PROJECT_NAME} mfsensorgroup)
-target_link_libraries(${PROJECT_NAME} Mfsrcsnk)
-target_link_libraries(${PROJECT_NAME} mfuuid)
-
+target_link_libraries(${PROJECT_NAME} ${LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${PROJECT_DLL})
-
 
 target_link_libraries(${PROJECT_DLL} Qt5::Core)
 
 # set startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
-
-get_target_property(_qmake_executable Qt5::qmake IMPORTED_LOCATION)
-get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
-find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
-
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E
-        env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
-            "$<TARGET_FILE:${PROJECT_NAME}>" ARGS --qmldir ${CMAKE_SOURCE_DIR}/src/
-    COMMENT "Running windeployqt..."
-)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
 

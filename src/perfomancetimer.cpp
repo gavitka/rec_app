@@ -1,3 +1,3 @@
 #include "perfomancetimer.h"
 
-PerfomanceTimer* PerfomanceTimer::m_instance = nullptr;
+PerformanceTimer* PerformanceTimer::m_instance = nullptr;

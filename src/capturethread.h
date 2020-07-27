@@ -55,10 +55,6 @@ public:
     void togglepause();
 
     bool isPaused();
-
-    HWND getHwnd();
-    void setHwnd(HWND value);
-
     void kick();
 
     int FPS();

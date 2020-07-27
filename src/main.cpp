@@ -8,8 +8,9 @@
 #include "backend.h"
 #include "kheventfilter.h"
 #include "applistmodel.h"
+#include "blwindow.h"
 
-QWindow* wnd;
+BLWindow* wnd;
 
 int main(int argc, char *argv[])
 {
@@ -32,17 +33,20 @@ int main(int argc, char *argv[])
 
     engine.addImportPath(":/imports");
 
-    qmlRegisterSingletonType<BackEnd>("io.qt.examples.backend", 1, 0, "BackEnd", &BackEnd::qmlInstance);
+
+    qmlRegisterType<BLWindow>("kh.components", 1, 0, "BLWindow");
+    qmlRegisterSingletonType<BackEnd>("kh.components", 1, 0, "BackEnd", &BackEnd::qmlInstance);
     qmlRegisterType<AppListModel>("kh.components", 1, 0, "AppListModel");
 
     engine.addImageProvider("preview", new PreviewImageProvider);
 
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
 
-    if( !(wnd = qobject_cast<QWindow*>( engine.rootObjects().at(0)) ))
+    auto obj = engine.rootObjects().at(0);
+    if( !(wnd = qobject_cast<BLWindow*>(obj) ))
         return -1;
 
-    // This fucks up the debug
+//    // This fucks up the debug
 
     app.installNativeEventFilter(new KhEventFilter());
 
