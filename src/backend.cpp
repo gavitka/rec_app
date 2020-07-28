@@ -49,7 +49,7 @@ BackEnd *BackEnd::getInstance() {
 
 BackEnd::BackEnd(QObject *parent) :
     QObject(parent),
-    m_hwnd(nullptr),
+//    m_hwnd(nullptr),
     m_settings("Gavitka software", "Time lapse recorder"),
     m_recordTimer()
 {
@@ -61,8 +61,9 @@ BackEnd::BackEnd(QObject *parent) :
     setResolutionIndex(m_settings.value("resolution").toInt());
     setCropIndex(m_settings.value("crop").toInt());
     setFrameRateIndex(m_settings.value("frameRate").toInt());
+
     m_recMode = m_settings.value("recMode").toInt();
-    setSleepMode(m_settings.value("sleepMode").toBool());
+    m_sleepMode = m_settings.value("sleepMode").toBool();
 
     m_resolutionList.append(new ListElement(RESOLUTIONS::res1080p, "1080p"));
     m_resolutionList.append(new ListElement(RESOLUTIONS::res720p, "720p"));
@@ -84,17 +85,18 @@ BackEnd::BackEnd(QObject *parent) :
     m_frameRateList.append(new ListElement(FRAMERATES::x8, "8x"));
     m_frameRateList.append(new ListElement(FRAMERATES::x16, "16x"));
 
-    m_imgpreview = QImage(300, 200, QImage::Format_RGBA8888);
-    m_imgpreview.fill(qRgb(66, 66, 66));
+//    m_imgpreview = QImage(300, 200, QImage::Format_RGBA8888);
+//    m_imgpreview.fill(qRgb(66, 66, 66));
     m_screen = QGuiApplication::primaryScreen();
 
-    m_windowName = m_settings.value("windowName").toString();
-    getWindowsList();
+//    m_windowName = m_settings.value("windowName").toString();
+//    getWindowsList();
 
     m_appList = new AppList(nullptr); // Application list model
+    connect(m_appList, &AppList::selectedChanged, this, &BackEnd::selectedChangedSlot);
     m_appList->update();
 
-    setImageSource("image://preview/");
+    // setImageSource("image://preview/");
     if (wnd) m_screen = wnd->screen();
     refreshUI();
 }
@@ -132,19 +134,23 @@ void BackEnd::startRecording()
 
     if(m_recMode == RECORD_MODE::Window && m_appList->size() <= 0) return;
 
-    m_capture = new CaptureThread();
+    m_capture = new CaptureWorker();
     m_capture->moveToThread(&m_thread);
 
-    connect(m_capture, &CaptureThread::sleepingChanged, this, &BackEnd::sleepingChangedSlot);
-    connect(m_capture, &CaptureThread::statusChanged, this, &BackEnd::statusChangedSlot);
-    connect(this, &BackEnd::stopSignal, m_capture, &CaptureThread::stop);
-    connect(this, &BackEnd::startSignal, m_capture, &CaptureThread::start);
-    connect(m_capture, &CaptureThread::finished, this, &BackEnd::handleResults);
-    connect(m_capture, &CaptureThread::finished, m_capture, &QObject::deleteLater);
+    connect(m_capture, &CaptureWorker::sleepingChanged, this, &BackEnd::sleepingChangedSlot);
+    connect(m_capture, &CaptureWorker::statusChanged, this, &BackEnd::statusChangedSlot);
+    connect(this, &BackEnd::stopSignal, m_capture, &CaptureWorker::stop);
+    connect(this, &BackEnd::startSignal, m_capture, &CaptureWorker::start);
+    connect(m_capture, &CaptureWorker::finished, this, &BackEnd::handleResults);
+    connect(m_capture, &CaptureWorker::finished, m_capture, &QObject::deleteLater);
 
-    connect(m_capture, &CaptureThread::updateVector, this, &BackEnd::updateVectorSlot);
-    connect(m_capture, &CaptureThread::InstallHook, this, &BackEnd::InstallHook);
-    connect(m_capture, &CaptureThread::UninstallHook, this, &BackEnd::UninstallHook);
+    connect(m_capture, &CaptureWorker::updateVector, this, &BackEnd::updateVectorSlot);
+    connect(m_capture, &CaptureWorker::InstallHook, this, &BackEnd::InstallHook);
+    connect(m_capture, &CaptureWorker::UninstallHook, this, &BackEnd::UninstallHook);
+
+    m_capture->setCrop((m_cropIndex == CROP_MODE::Crop) ? true : false);
+    m_capture->setBitRate(m_bitRate);
+    m_capture->setFrameRate(m_recordFPS);
 
     m_thread.start();
 
@@ -219,8 +225,8 @@ void BackEnd::setRecMode(bool value)
 
     emit recModeChanged();
     emit recordReadyChanged();
-    refreshImage();
-    setImageSource("image://preview/");
+//    refreshImage();
+//    setImageSource("image://preview/");
 }
 
 int BackEnd::recordMode()
@@ -234,14 +240,9 @@ void BackEnd::setRecordMode(int value)
     emit recModeChanged();
 }
 
-QList<QObject *> BackEnd::windowList()
-{
-    return m_dataList;
-}
-
-int BackEnd::windowIndex() {
-    return m_windowIndex;
-}
+//int BackEnd::windowIndex() {
+//    return m_windowIndex;
+//}
 
 QString BackEnd::recordingTime()
 {
@@ -271,11 +272,11 @@ void BackEnd::setFilePath(QString value)
 {
     QDir d = QDir(value);
     if(d.exists()) {
-        m_filePath = d.absolutePath();
+        m_filePath.setPath(d.absolutePath());
         m_settings.setValue("filePath", m_filePath.absolutePath());
         emit filePathChanged();
     } else if(m_filePath.isEmpty()) {
-        m_filePath = d.homePath();
+        m_filePath.setPath(d.homePath());
         emit filePathChanged();
     }
 }
@@ -307,17 +308,17 @@ QString BackEnd::fileLabel()
     return s;
 }
 
-QString BackEnd::imageSource()
-{
-    return m_imageSource;
-}
+//QString BackEnd::imageSource()
+//{
+//    return m_imageSource;
+//}
 
-void BackEnd::setImageSource(QString value)
-{
-    int x = QRandomGenerator::global()->generate();
-    m_imageSource = value + QString::number(x);
-    emit imageSourceChanged();
-}
+//void BackEnd::setImageSource(QString value)
+//{
+//    int x = QRandomGenerator::global()->generate();
+//    m_imageSource = value + QString::number(x);
+//    emit imageSourceChanged();
+//}
 
 bool BackEnd::sleepMode()
 {
@@ -351,9 +352,14 @@ QList<QObject*> BackEnd::frameRateList()
     return m_frameRateList;
 }
 
+int BackEnd::resolutionIndex()
+{
+    return m_resolutionIndex;
+}
+
 qint64 BackEnd::getElapsedTime()
 {
-     if(recordStatus() == RECORD_STATUS::Pause)
+    if(recordStatus() == RECORD_STATUS::Pause)
          return m_recordTime;
      if (recordStatus() == RECORD_STATUS::Rec && m_recordTimer.isValid())
          return m_recordTime + m_recordTimer.elapsed();
@@ -365,9 +371,11 @@ QImage BackEnd::getPreview(int index)
     QImage img;
     if(index >= 0 && index < m_appList->size()) {
         HWND hwnd = m_appList->at(index).hwnd;
-        img = CaptureThread::CaptureWindow(m_screen, hwnd);
-        if(!img.isNull())
-            return img;
+        if(IsWindow(hwnd)) {
+            img = CaptureWorker::CaptureWindow(m_screen, hwnd);
+            if(!img.isNull())
+                return img;
+        }
     }
     QPixmap symbol(":/images/na.png");
     QPixmap pixmap(300, 200);
@@ -383,9 +391,9 @@ QImage BackEnd::getPreview(int index)
     return img;
 }
 
-int BackEnd::framesPerSecond()
+int BackEnd::playFPS()
 {
-    return m_framesPerSecond;
+    return m_playFPS;
 }
 
 int BackEnd::bitRate()
@@ -393,9 +401,9 @@ int BackEnd::bitRate()
     return m_bitRate;
 }
 
-int BackEnd::shotsPerSecond()
+int BackEnd::recordFPS()
 {
-    return m_shotsPerSecond;
+    return m_recordFPS;
 }
 
 int BackEnd::getWidth()
@@ -408,15 +416,15 @@ int BackEnd::getHeight()
     return m_height;
 }
 
-void BackEnd::refreshImage()
-{
-    if(recMode() == RECORD_MODE::Window) {
-        m_imgpreview = CaptureThread::CaptureWindow(m_screen, m_hwnd);
-    } else {
-        m_imgpreview = CaptureThread::CaptureScreen(m_screen);
-    }
-    emit imageSourceChanged();
-}
+//void BackEnd::refreshImage()
+//{
+//    if(recMode() == RECORD_MODE::Window) {
+//        m_imgpreview = CaptureWorker::CaptureWindow(m_screen, m_hwnd);
+//    } else {
+//        m_imgpreview = CaptureWorker::CaptureScreen(m_screen);
+//    }
+//    emit imageSourceChanged();
+//}
 
 void BackEnd::setResolutionIndex(int value)
 {
@@ -448,7 +456,15 @@ void BackEnd::setCropIndex(int value)
 {
     m_cropIndex = value;
     m_settings.setValue("crop", value);
+    if(m_capture != nullptr) {
+        m_capture->setCrop((value == CROP_MODE::Crop) ? true : false);
+    }
     emit cropIndexChanged();
+}
+
+int BackEnd::bitRateIndex()
+{
+    return m_bitRateIndex;
 }
 
 void BackEnd::setBitRateIndex(int value)
@@ -474,33 +490,41 @@ void BackEnd::setBitRateIndex(int value)
         m_bitRate = 3000;
         break;
     default:
-        m_bitRateIndex = BITRATES::b2500;
         m_bitRate = 2500;
+        m_bitRateIndex = BITRATES::b2500;
         break;
+    }
+    if(m_capture != nullptr) {
+        m_capture->setBitRate(m_bitRate);
     }
     m_settings.setValue("bitRate", m_bitRateIndex);
     emit bitRateIndexChanged();
 }
+
+int BackEnd::frameRateIndex() {return m_frameRateIndex;}
 
 void BackEnd::setFrameRateIndex(int value)
 {
     m_frameRateIndex = value;
     switch(value) {
     case FRAMERATES::x1:
-        m_shotsPerSecond = m_framesPerSecond / 1;
+        m_recordFPS = m_playFPS / 1;
         break;
     case FRAMERATES::x2:
-        m_shotsPerSecond = m_framesPerSecond / 2;
+        m_recordFPS = m_playFPS / 2;
         break;
     case FRAMERATES::x4:
-        m_shotsPerSecond = m_framesPerSecond / 4;
+        m_recordFPS = m_playFPS / 4;
         break;
     case FRAMERATES::x8:
-        m_shotsPerSecond = m_framesPerSecond / 8;
+        m_recordFPS = m_playFPS / 8;
         break;
     case FRAMERATES::x16:
-        m_shotsPerSecond = m_framesPerSecond / 16;
+        m_recordFPS = m_playFPS / 16;
         break;
+    }
+    if(m_capture != nullptr) {
+        m_capture->setFrameRate(m_recordFPS);
     }
     m_settings.setValue("frameRate", value);
     emit frameRateIndexChanged();
@@ -516,7 +540,7 @@ QString BackEnd::statusLine() {
 bool BackEnd::recordReady() {
     if(recordMode() == RECORD_MODE::Screen)
         return true;
-    if(recordMode() == RECORD_MODE::Window && getHwnd() != nullptr)
+    if(recordMode() == RECORD_MODE::Window && m_appList->isSelected())
         return true;
     return false;
 }
@@ -554,21 +578,6 @@ AppList *BackEnd::appList()
 }
 
 QSettings *BackEnd::getSettings(){return &m_settings;}
-
-void BackEnd::getWindowsList()
-{
-    m_dataList.clear();
-    EnumWindows(getWindowsListCallback, reinterpret_cast<LPARAM>(&m_dataList));
-    int index = 0;
-    for(int i = 0; i < m_dataList.length(); ++i) {
-        if( ((WindowObject*)m_dataList.value(i))->name() == m_windowName) {
-            index = i;
-            break;
-        }
-    }
-    emit windowListChanged();
-    setWindowIndex(index);
-}
 
 void BackEnd::timerUpdateSlot()
 {
@@ -615,6 +624,11 @@ void BackEnd::updateVectorSlot()
     UpdateWindowsList(m_windowHandles);
 }
 
+void BackEnd::selectedChangedSlot()
+{
+    emit recordReadyChanged();
+}
+
 //void BackEnd::hover(int index)
 //{
 //    if(index >= 0 && index < m_appList->size()) {
@@ -628,26 +642,10 @@ std::vector<HWND>* BackEnd::windowVector() {
     return m_windowHandles;
 }
 
-void BackEnd::setWindowIndex(int index)
-{
-    if(m_dataList.isEmpty()) return;
-    if (index >= m_dataList.length()) return;
-    WindowObject* currentWindow = (WindowObject*)m_dataList.at(index);
-    m_windowIndex = index;
-    m_windowName = currentWindow->name();
-    m_settings.setValue("windowName", m_windowName);
-    HWND hwnd = currentWindow->getHwnd();
-    m_hwnd = hwnd;
-    refreshImage();
-    setImageSource("image://preview/");
-    emit windowIndexChanged();
-    emit recordReadyChanged();
-}
-
-HWND BackEnd::getHwnd()
-{
-    return m_hwnd;
-}
+//HWND BackEnd::getHwnd()
+//{
+//    return m_hwnd;
+//}
 
 QString BackEnd::filePrefix()
 {
@@ -678,11 +676,11 @@ QString BackEnd::recordingState()
     return "Ready";
 }
 
-PreviewImageProvider::PreviewImageProvider()
+ThumbProvider::ThumbProvider()
     : QQuickImageProvider(QQuickImageProvider::Image)
 { }
 
-QImage PreviewImageProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
+QImage ThumbProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
 {
     Q_UNUSED(id);
     Q_UNUSED(requestedSize);

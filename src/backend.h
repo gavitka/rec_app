@@ -23,7 +23,7 @@
 
 #include "CaptureThread.h"
 
-class CaptureThread;
+class CaptureWorker;
 
 enum RECORD_MODE {
     Screen,
@@ -47,13 +47,7 @@ enum BITRATES{
     b500 = 0, b1000, b1500, b2000, b2500, b3000
 };
 
-class WindowObject;
-//class ResolutionObject;
-//class BitrateObject;
-//class FramerateObject;
 class ListElement;
-
-QString int2str(int i);
 
 class BackEnd : public QObject
 {
@@ -65,28 +59,33 @@ class BackEnd : public QObject
     Q_PROPERTY(QString statusLine READ statusLine NOTIFY timeChanged)
     Q_PROPERTY(QString recordingTime READ recordingTime NOTIFY timeChanged)
 
-    Q_PROPERTY(QList<QObject*> windowList READ windowList NOTIFY windowListChanged)
+    //Q_PROPERTY(QList<QObject*> windowList READ windowList NOTIFY windowListChanged)
+    //Q_PROPERTY(int windowIndex READ windowIndex WRITE setWindowIndex NOTIFY windowIndexChanged)
 
-    Q_PROPERTY(int windowIndex READ windowIndex WRITE setWindowIndex NOTIFY windowIndexChanged)
     Q_PROPERTY(bool recMode READ recMode WRITE setRecMode NOTIFY recModeChanged)
+
     Q_PROPERTY(QString filePrefix READ filePrefix WRITE setFilePrefix NOTIFY filePrefixChanged)
     Q_PROPERTY(QString filePath READ filePath WRITE setFilePathUrl NOTIFY filePathChanged)
     Q_PROPERTY(QString fileUrl READ fileUrl NOTIFY filePathChanged)
     Q_PROPERTY(QString fileLabel READ fileLabel NOTIFY filePathChanged)
-    Q_PROPERTY(QString imageSource READ imageSource WRITE setImageSource NOTIFY imageSourceChanged)
+
+    //Q_PROPERTY(QString imageSource READ imageSource WRITE setImageSource NOTIFY imageSourceChanged)
     Q_PROPERTY(bool sleepMode READ sleepMode WRITE setSleepMode NOTIFY sleepModeChanged)
     Q_PROPERTY(bool recordReady READ recordReady NOTIFY recordReadyChanged)
 
     Q_PROPERTY(QList<QObject*> resolutionList READ resolutionList NOTIFY resolutionListChanged)
     Q_PROPERTY(int resolutionIndex READ resolutionIndex WRITE setResolutionIndex NOTIFY resolutionIndexChanged)
+
     Q_PROPERTY(QList<QObject*> cropList READ cropList NOTIFY cropListChanged)
     Q_PROPERTY(int cropIndex READ cropIndex WRITE setCropIndex NOTIFY cropIndexChanged)
+
     Q_PROPERTY(QList<QObject*> bitRateList READ bitRateList NOTIFY bitRateListChanged)
     Q_PROPERTY(int bitRateIndex READ bitRateIndex WRITE setBitRateIndex NOTIFY bitRateIndexChanged)
+
     Q_PROPERTY(QList<QObject*> frameRateList READ frameRateList NOTIFY frameRateListChanged)
     Q_PROPERTY(int frameRateIndex READ frameRateIndex WRITE setFrameRateIndex NOTIFY frameRateIndexChanged)
-    Q_PROPERTY(AppList* appList READ appList NOTIFY appListChanged)
 
+    Q_PROPERTY(AppList* appList READ appList NOTIFY appListChanged)
 
     Q_PROPERTY(int mouseX READ mouseX WRITE setMouseX NOTIFY mousePosChanged)
     Q_PROPERTY(int mouseY READ mouseY WRITE setMouseX NOTIFY mousePosChanged)
@@ -117,12 +116,10 @@ public:
     int recordMode();
     void setRecordMode(int value);
 
-    QList<QObject*> windowList();
+//    int windowIndex();
+//    void setWindowIndex(int value);
 
-    int windowIndex();
-    void setWindowIndex(int value);
-
-    HWND getHwnd();
+    //HWND getHwnd();
 
     QString filePrefix();
     void setFilePrefix(QString value);
@@ -144,8 +141,8 @@ public:
 
     bool checkfilename(QString filename);
 
-    QString imageSource();
-    void setImageSource(QString value);
+//    QString imageSource();
+//    void setImageSource(QString value);
 
     bool sleepMode();
     void setSleepMode(bool value);
@@ -155,16 +152,16 @@ public:
     QList<QObject*> bitRateList();
     QList<QObject*> frameRateList();
 
-    int resolutionIndex() {return m_resolutionIndex;}
+    int resolutionIndex();
     void setResolutionIndex(int value);
 
     int cropIndex();
     void setCropIndex(int value);
 
-    int bitRateIndex() {return m_bitRateIndex;}
+    int bitRateIndex();
     void setBitRateIndex(int value);
 
-    int frameRateIndex() {return m_frameRateIndex;}
+    int frameRateIndex();
     void setFrameRateIndex(int value);
 
     QString statusLine();
@@ -187,11 +184,11 @@ public:
     qint64 getElapsedTime();
     QImage getPreview(int index);
 
-    int framesPerSecond();
+    int playFPS();
 
     int bitRate();
 
-    int shotsPerSecond();
+    int recordFPS();
 
     int getWidth();
     int getHeight();
@@ -205,9 +202,6 @@ signals:
 
     void statusChanged();
     void timeChanged();
-
-    void windowListChanged();
-    void windowIndexChanged();
 
     void mousePosChanged();
 
@@ -247,7 +241,6 @@ public slots:
     void handleResults();
 
     void refreshUI();
-    void getWindowsList();
     void timerUpdateSlot();
     QScreen* getScreen(){return m_screen;}
     void sleepingChangedSlot();
@@ -256,50 +249,50 @@ public slots:
     void InstallHook();
     void UninstallHook();
     void updateVectorSlot();
+    void selectedChangedSlot();
     //void hover(int index);
 
 private:
 
     static BackEnd* m_instance;
-    QString m_output_text;
     int m_width;
     int m_height;
     int m_mousex;
     int m_mousey;
-    int m_framesPerSecond = 24;
-    int m_shotsPerSecond = 3;
+
+    int m_playFPS = 24;
+    int m_recordFPS = 3;
     bool m_lockParam;
-    int m_record_status;
     int m_recMode = RECORD_MODE::Screen;
     int m_bitRate;
-    QString m_outFileName;
-    QList<QObject*> m_dataList;
-    int m_windowIndex;
-    HWND m_hwnd;
+
+//    int m_windowIndex;
+//    HWND m_hwnd;
     QSettings m_settings;
     QString m_filePrefix = "prefix";
     QTimer* m_timer;
     QDir m_filePath;
     QElapsedTimer m_recordTimer;
     qint64 m_recordTime = 0;
-    QImage m_imgpreview;
+//    QImage m_imgpreview;
     QScreen* m_screen;
-    QString m_imageSource;
+//    QString m_imageSource;
     bool m_sleepMode;
+
     QList<QObject*> m_resolutionList;
     QList<QObject*> m_cropList;
     QList<QObject*> m_bitRateList;
     QList<QObject*> m_frameRateList;
     int m_resolutionIndex;
     int m_cropIndex;
-    int m_bitRateIndex;
     int m_frameRateIndex;
-    QString m_windowName;
+    int m_bitRateIndex;
+
     bool m_sleepingflag = false;
     bool m_windowCloseFlag = false;
     AppList* m_appList = nullptr;
 
-    CaptureThread* m_capture = nullptr;
+    CaptureWorker* m_capture = nullptr;
     QThread m_thread;
     std::vector<HWND>* m_windowHandles;
 };
@@ -329,10 +322,10 @@ private:
     QString m_name;
 };
 
-class PreviewImageProvider : public QQuickImageProvider {
+class ThumbProvider : public QQuickImageProvider {
 
 public:
-    PreviewImageProvider();
+    ThumbProvider();
 
     QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize);
 };
@@ -359,6 +352,3 @@ private:
     int index;
     QString m_name;
 };
-
-
-BOOL CALLBACK getWindowsListCallback(HWND hWnd, LPARAM lParam);

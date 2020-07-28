@@ -16,95 +16,71 @@
 
 extern BLWindow* wnd;
 
-CaptureThread::CaptureThread():
+CaptureWorker::CaptureWorker():
     m_updatetimer(this)
-{
-    m_screen = QGuiApplication::primaryScreen();
-    if (wnd)
-        m_screen = wnd->screen();
+{ }
 
-    m_currentFPS = getShotsPerSecond();
-
-    m_backEnd = BackEnd::getInstance();
-
-    m_fps =                 m_backEnd->framesPerSecond();
-    m_width =               m_backEnd->getWidth();
-    m_height =              m_backEnd->getHeight();
-    m_cropmode =            m_backEnd->cropIndex();
-    m_recMode =             m_backEnd->recordMode();
-    m_hwnd =                m_backEnd->getHwnd(); // check no window
-    m_bitRate =             m_backEnd->bitRate();
-
-    QString filename =      m_backEnd->fileName();
-    m_b1 = filename.toLatin1();
-
-    QString tempfilename = QDir().tempPath() + QDir::separator() + "tmp.h264";
-    m_b2 = tempfilename.toLatin1();
-
-    m_asp = (qreal)m_width/m_height;
+CaptureWorker::~CaptureWorker() {
 }
 
-CaptureThread::~CaptureThread() {
-}
-
-void CaptureThread::start()
+void CaptureWorker::start()
 {
     try {
         Init();
         // Start capture
-        QTimer::singleShot(0, this, &CaptureThread::Capture);
+        QTimer::singleShot(0, this, &CaptureWorker::Capture);
     } catch (std::exception e) {
         qDebug(e.what());
         exit(-1);
     }
 }
 
-void CaptureThread::stop()
+void CaptureWorker::stop()
 {
     if(m_pause == true)
         m_pause = false;
     m_stop = true;
 }
 
-void CaptureThread::togglepause()
+void CaptureWorker::togglepause()
 {
     this->m_pause = !this->m_pause;
     m_status = this->m_pause ? RECORD_STATUS::Pause : RECORD_STATUS::Rec;
     emit statusChanged();
 }
 
-bool CaptureThread::isPaused() {
+bool CaptureWorker::isPaused() {
     return m_pause;
 }
 
-void CaptureThread::kick()
+void CaptureWorker::kick()
 {
     if(m_sleeptimer.elapsed() >= 3000)
         m_sleeptimer.restart();
 }
 
-int CaptureThread::FPS()
-{
-    return m_currentFPS;
-}
-
-bool CaptureThread::CheckWindow()
+bool CaptureWorker::CheckWindow()
 {
     HWND t = GetForegroundWindow();
-    for(HWND w : *m_backEnd->windowVector()) {
-        if(w == t && w!= m_hwnd) {
-            qDebug() << "change window";
-            m_hwnd = w;
-            return true;
+    if(m_backEnd->windowVector()->size() > 0) {
+        for(HWND w : *m_backEnd->windowVector()) {
+            if(w == t && w!= m_hwnd) {
+                m_hwnd = w;
+                return true;
+            }
         }
     }
     return false;
 }
 
-void CaptureThread::Init()
+void CaptureWorker::Init()
 {
+    m_screen = QGuiApplication::primaryScreen();
+    if (wnd)
+        m_screen = wnd->screen();
+
     m_updatetimer.setInterval(1000);
-    connect(&m_updatetimer, &QTimer::timeout, this, &CaptureThread::update, Qt::DirectConnection);
+    connect(&m_updatetimer, &QTimer::timeout, this, &CaptureWorker::update, Qt::DirectConnection);
 
     m_updatetimer.start();
     m_sleeptimer.start();
@@ -112,15 +88,23 @@ void CaptureThread::Init()
     setStatus(RECORD_STATUS::Rec);
     emit statusChanged();
 
-    BackEnd* backEnd = BackEnd::getInstance();
+    m_backEnd = BackEnd::getInstance();
 
-    m_fps =         backEnd->framesPerSecond();
-    m_width =       backEnd->getWidth();
-    m_height =      backEnd->getHeight();
-    m_cropmode =    backEnd->cropIndex();
-    m_recMode =     backEnd->recordMode();
-    m_hwnd =        backEnd->getHwnd();
-    m_bitRate =     backEnd->bitRate();
+    m_playFPS =     m_backEnd->playFPS();
+    m_width =       m_backEnd->getWidth();
+    m_height =      m_backEnd->getHeight();
+    m_recMode =     m_backEnd->recordMode();
+    m_bitRate =     m_backEnd->bitRate();
+
+    QString _filename = m_backEnd->fileName();
+    m_b1 = _filename.toLatin1();
+
+    QString _tempfilename = QDir().tempPath() + QDir::separator() + "tmp.h264";
+    m_b2 = _tempfilename.toLatin1();
+
+    m_asp = (qreal)m_width/m_height;
+
+    CheckWindow();
 
     emit InstallHook();
 
@@ -147,10 +131,10 @@ void CaptureThread::Init()
     videoStream->codecpar->height = m_height;
     videoStream->codecpar->format = AV_PIX_FMT_YUV420P;
     videoStream->codecpar->bit_rate = m_bitRate * 1000;
-    videoStream->time_base = { 1, m_fps };
+    videoStream->time_base = { 1, m_playFPS };
 
     avcodec_parameters_to_context(cctx, videoStream->codecpar);
-    cctx->time_base = { 1, m_fps };
+    cctx->time_base = { 1, m_playFPS };
     cctx->max_b_frames = 2;
     cctx->gop_size = 12;
     if (videoStream->codecpar->codec_id == AV_CODEC_ID_H264) {
@@ -175,10 +159,10 @@ void CaptureThread::Init()
     av_dump_format(ofctx, 0, tempfilename(), 1);
 }
 
-void CaptureThread::Capture()
+void CaptureWorker::Capture()
 {
     if(m_stop) {
-        QTimer::singleShot(0, this, &CaptureThread::Finish);
+        QTimer::singleShot(0, this, &CaptureWorker::Finish);
         return;
     }
 
@@ -200,10 +184,10 @@ void CaptureThread::Capture()
 
     qint64 remaining_timeout = getShotTimeout() - frametimer.elapsed();
     remaining_timeout = (remaining_timeout < 0) ? 0: remaining_timeout;
-    QTimer::singleShot(remaining_timeout, this, &CaptureThread::Capture);
+    QTimer::singleShot(remaining_timeout, this, &CaptureWorker::Capture);
 }
 
-void CaptureThread::Finish()
+void CaptureWorker::Finish()
 {
     // flush avcodec
     AVPacket pkt;
@@ -237,11 +221,10 @@ void CaptureThread::Finish()
     emit finished();
 }
 
-void CaptureThread::CaptureFrame()
+void CaptureWorker::CaptureFrame()
 {
     QImage image;
     if(m_recMode == RECORD_MODE::Window) {
-        qDebug() << "m_hwnd" << m_hwnd;
         if(!IsWindow(m_hwnd)) return;
         image = CaptureWindow(m_screen, m_hwnd);
     } else {
@@ -319,7 +302,7 @@ void CaptureThread::CaptureFrame()
     }
 }
 
-void CaptureThread::Remux()
+void CaptureWorker::Remux()
 {
     AVFormatContext *ifmt_ctx = nullptr, *ofmt_ctx = nullptr;
     int err;
@@ -344,7 +327,7 @@ void CaptureThread::Remux()
             throw std::exception("Failed to allocate output video stream");
             return;
         }
-        outVideoStream->time_base = { 1, m_fps };
+        outVideoStream->time_base = { 1, m_playFPS };
         avcodec_parameters_copy(outVideoStream->codecpar, inVideoStream->codecpar);
         outVideoStream->codecpar->codec_tag = 0;
 
@@ -395,17 +378,17 @@ void CaptureThread::Remux()
     }
 }
 
-const char *CaptureThread::filename()
+const char *CaptureWorker::filename()
 {
     return m_b1.constData();
 }
 
-const char *CaptureThread::tempfilename()
+const char *CaptureWorker::tempfilename()
 {
     return m_b2.constData();
 }
 
-void CaptureThread::Clear()
+void CaptureWorker::Clear()
 {
     if (videoFrame) {
         av_frame_free(&videoFrame);
@@ -422,7 +405,7 @@ void CaptureThread::Clear()
     m_updatetimer.stop();
 }
 
-QImage CaptureThread::CaptureScreen(QScreen* screen)
+QImage CaptureWorker::CaptureScreen(QScreen* screen)
 {
     QPixmap pixmap = screen->grabWindow(0);
     QPixmap pixmap_cursor(":/images/cursor.png");
@@ -435,7 +418,7 @@ QImage CaptureThread::CaptureScreen(QScreen* screen)
     return pixmap.toImage();
 }
 
-QImage CaptureThread::CaptureWindow(QScreen* screen, HWND hwnd)
+QImage CaptureWorker::CaptureWindow(QScreen* screen, HWND hwnd)
 {
     QPixmap pixmap = screen->grabWindow((WId)hwnd);
     QCursor cur(Qt::ArrowCursor);
@@ -450,23 +433,22 @@ QImage CaptureThread::CaptureWindow(QScreen* screen, HWND hwnd)
     return pixmap.toImage();
 }
 
-qint64 CaptureThread::getShotTimeout()
+qint64 CaptureWorker::getShotTimeout()
 {
-    return (1000 / getShotsPerSecond());
+    return (1000 / m_recordFPS);
 }
 
-int CaptureThread::getShotsPerSecond()
+int CaptureWorker::getShotsPerSecond()
 {
-    return BackEnd::getInstance()->shotsPerSecond();
+    return m_recordFPS;
 }
 
 // copies QImage
-QImage CaptureThread::fixAspectRatio(QImage img)
+QImage CaptureWorker::fixAspectRatio(QImage img)
 {
     // Possible but not major performance loss here
-    m_cropmode = BackEnd::getInstance()->cropIndex();
     qreal asp2 = (qreal)img.width()/img.height();
-    if((asp2 > m_asp) ^ (m_cropmode == CROP_MODE::Crop)) {
+    if((asp2 > m_asp) ^ (m_cropmode == true)) {
         int newheight = (int)img.width()/m_asp;
         return img.copy(0, (img.height() - newheight)/2, img.width(), newheight);
     }
@@ -476,29 +458,44 @@ QImage CaptureThread::fixAspectRatio(QImage img)
     }
 }
 
-int CaptureThread::status()
+int CaptureWorker::status()
 {
     return m_status;
 }
 
-void CaptureThread::setStatus(int value)
+void CaptureWorker::setStatus(int value)
 {
     m_status = value;
     emit statusChanged();
 }
 
-bool CaptureThread::sleeping()
+bool CaptureWorker::sleeping()
 {
     return m_sleepflag;
 }
 
-void CaptureThread::update()
+void CaptureWorker::setFrameRate(int value)
+{
+    m_recordFPS = value;
+}
+
+void CaptureWorker::setCrop(bool value)
+{
+    m_cropmode = value;
+}
+
+void CaptureWorker::setBitRate(int value)
+{
+    m_bitRate = value;
+}
+
+void CaptureWorker::update()
 {
     CheckWindow();
     emit updateVector();
 }
 
-void CaptureThread::checkSleeping(bool makeSleeping)
+void CaptureWorker::checkSleeping(bool makeSleeping)
 {
     if (m_sleepflag != makeSleeping) {
         m_sleepflag = makeSleeping;

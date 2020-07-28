@@ -24,6 +24,7 @@ public:
     void select(int i);
     void addWindows(QVector<HWND>* add_list);
     void updateVector(std::vector<HWND>* vector);
+    bool isSelected();
 
 private:
 
@@ -35,6 +36,7 @@ signals:
 
     void listUpdated();
     void vectorChanged();
+    void selectedChanged();
 };
 
 QString GetWindowTitle(HWND whnd);

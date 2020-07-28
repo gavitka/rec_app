@@ -33,6 +33,7 @@ void AppList::select(int i)
     if(i >=0 && i <m_data.size()) {
         m_data[i].selected = !m_data[i].selected;
     }
+    emit selectedChanged();
 }
 
 // updates vector of selected items upon request
@@ -45,6 +46,14 @@ void AppList::updateVector(std::vector<HWND> *vector)
             HWND hwnd = m_data[i].hwnd;
             vector->push_back(hwnd);
         }
+}
+
+bool AppList::isSelected()
+{
+    for(auto w : m_data) {
+        if(w.selected == true) return true;
+    }
+    return false;
 }
 
 int AppList::windowsExists(HWND hwnd)
@@ -121,7 +130,6 @@ void AppList::addWindows(QVector<HWND>* add_list)
 
 void AppList::update()
 {
-    //if(m_data.size() != 0) m_data.clear();
     QVector<HWND>* add_list = new QVector<HWND>;
     EnumWindows(getWindowsListCallback2, reinterpret_cast<LPARAM>(add_list));
     addWindows(add_list);

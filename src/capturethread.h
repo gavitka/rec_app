@@ -44,33 +44,35 @@ enum RECORD_STATUS{
     Pause
 };
 
-class CaptureThread : public QThread
+class CaptureWorker : public QThread
 {
     Q_OBJECT
 
 public:
-    CaptureThread();
-    ~CaptureThread();
+    CaptureWorker();
+    ~CaptureWorker();
 
     void togglepause();
 
     bool isPaused();
     void kick();
 
-    int FPS();
 
     static QImage CaptureScreen(QScreen* screen);
     static QImage CaptureWindow(QScreen* screen, HWND hwnd);
 
+    int FPS();
     qint64 getShotTimeout();
-
     int getShotsPerSecond();
-
 
     int status();
     void setStatus(int value);
 
     bool sleeping();
+
+    void setFrameRate(int value);
+    void setCrop(bool value);
+    void setBitRate(int value);
 
 public slots:
 
@@ -114,14 +116,14 @@ private:
     HWND m_hwnd;
     QScreen* m_screen;
     int m_recMode;
-    int m_currentFPS = 0;
 
     int m_width;
     int m_height;
     qreal m_asp;
-    int m_fps;
+    int m_playFPS = 24;
+    int m_recordFPS = 3;
     int m_bitRate;
-    int m_cropmode;
+    bool m_cropmode;
     bool m_sleepflag = false;
 
     QElapsedTimer m_sleeptimer;

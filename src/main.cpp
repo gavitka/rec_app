@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     qmlRegisterSingletonType<BackEnd>("kh.components", 1, 0, "BackEnd", &BackEnd::qmlInstance);
     qmlRegisterType<AppListModel>("kh.components", 1, 0, "AppListModel");
 
-    engine.addImageProvider("previewprovider", new PreviewImageProvider);
+    engine.addImageProvider("previewprovider", new ThumbProvider);
 
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
 

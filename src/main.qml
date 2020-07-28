@@ -18,6 +18,8 @@ BLWindow {
     title: qsTr("Time lapse recording app")
     id:wnd
 
+    color: "white"
+
     Settings {
         property alias x: wnd.x
         property alias y: wnd.y
@@ -147,8 +149,9 @@ BLWindow {
             Layout.fillHeight: true
             clip: true
             contentHeight: child.height + 80
-            Item {
+            MouseArea {
                 width: parent.width
+                onClicked: forceActiveFocus()
                 ColumnLayout {
                     id: child
                     anchors.margins: 32
@@ -444,7 +447,8 @@ BLWindow {
                         }
                     } // RowLayout
                 } // ColumnLayout
-            } // Item
+            } // MouseArea
+
             ScrollBar.vertical: ScrollBar { }
         } // Flickable
     } // ColumnLayout
