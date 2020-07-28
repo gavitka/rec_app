@@ -17,7 +17,8 @@ public:
 
     enum AppRoles {
         TextRole = Qt::UserRole + 1,
-        SelectedRole
+        SelectedRole,
+        FileName
     };
 
     AppListModel();

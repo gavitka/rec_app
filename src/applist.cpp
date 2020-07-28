@@ -1,4 +1,8 @@
+#include <QDir>
+
 #include "applist.h"
+#include "psapi.h"
+
 
 BOOL CALLBACK getWindowsListCallback2(HWND hwnd, LPARAM lParam)
 {
@@ -60,6 +64,7 @@ int AppList::windowsExists(HWND hwnd)
 void AppList::addWindows(QVector<HWND>* add_list)
 {
     QString title;
+    QString exename;
 
     // Removing empty windows
     QMutableVectorIterator<HWND> it(*add_list);
@@ -91,6 +96,7 @@ void AppList::addWindows(QVector<HWND>* add_list)
     for(auto hwnd : *add_list) {
 
         title = GetWindowTitle(hwnd);
+        exename = getWindowExeName(hwnd);
         QVector<QString> words;
 
         int index = windowsExists(hwnd);
@@ -98,6 +104,7 @@ void AppList::addWindows(QVector<HWND>* add_list)
             // update Window data;
             App& app = m_data[index];
             app.name = title;
+            app.exename = exename;
             continue;
         }
 
@@ -105,6 +112,7 @@ void AppList::addWindows(QVector<HWND>* add_list)
         App app;
         app.name = title;
         app.hwnd = hwnd;
+        app.exename = exename;
         app.selected = false; // TODO: save/load
 
         m_data.append(std::move(app));
@@ -132,4 +140,16 @@ QString GetWindowTitle(HWND hwnd)
     QString title(QString::fromWCharArray(windowTitle));
 
     return title;
+}
+
+QString getWindowExeName(HWND hwnd)
+{
+    WCHAR fileName[MAX_PATH];
+    DWORD dwPID;
+    GetWindowThreadProcessId(hwnd, &dwPID);
+    HANDLE Handle = ::OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, dwPID);
+    if(!Handle) return QString("");
+
+    ::GetModuleFileNameEx(Handle, 0, fileName, MAX_PATH);
+    return QFileInfo (QString::fromWCharArray(fileName)).fileName();
 }

@@ -11,4 +11,5 @@ QtObject {
     readonly property color button_hover_cover: "#fff0f0f0"
     readonly property color appbutton_hover: "#875050"
     readonly property color close_hover: "#d90000"
+    readonly property color loosetext: "#8f8f8f"
 }

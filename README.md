@@ -11,6 +11,7 @@ videos of digital artwork. For Windows only.
 
 ## TODO:
 
+- [ ] Capture cursor
 - [ ] Update UI for window selection
 - [ ] Get rid of pesky QML binding loops
 - [ ] Implement frameless window

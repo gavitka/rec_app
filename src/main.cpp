@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 
     QCoreApplication::setOrganizationName("Gavitka software");
     QCoreApplication::setOrganizationDomain("gavitka.com");
-    QCoreApplication::setApplicationName("Diversity recording");
+    QCoreApplication::setApplicationName("Time lapse rec");
 
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
@@ -38,15 +38,13 @@ int main(int argc, char *argv[])
     qmlRegisterSingletonType<BackEnd>("kh.components", 1, 0, "BackEnd", &BackEnd::qmlInstance);
     qmlRegisterType<AppListModel>("kh.components", 1, 0, "AppListModel");
 
-    engine.addImageProvider("preview", new PreviewImageProvider);
+    engine.addImageProvider("previewprovider", new PreviewImageProvider);
 
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
 
     auto obj = engine.rootObjects().at(0);
     if( !(wnd = qobject_cast<BLWindow*>(obj) ))
         return -1;
-
-//    // This fucks up the debug
 
     app.installNativeEventFilter(new KhEventFilter());
 

@@ -21,5 +21,6 @@
         <file>../images/close.png</file>
         <file>../images/full.png</file>
         <file>../images/back.png</file>
+        <file>../images/na.png</file>
     </qresource>
 </RCC>

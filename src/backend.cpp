@@ -360,9 +360,27 @@ qint64 BackEnd::getElapsedTime()
     return 0;
 }
 
-QImage BackEnd::imgPreview()
+QImage BackEnd::getPreview(int index)
 {
-    return m_imgpreview;
+    QImage img;
+    if(index >= 0 && index < m_appList->size()) {
+        HWND hwnd = m_appList->at(index).hwnd;
+        img = CaptureThread::CaptureWindow(m_screen, hwnd);
+        if(!img.isNull())
+            return img;
+    }
+    QPixmap symbol(":/images/na.png");
+    QPixmap pixmap(300, 200);
+    pixmap.fill(qRgb(0, 0, 0));
+    int x1 = pixmap.width() / 2 - symbol.width() / 2;
+    int y1 = pixmap.height() / 2 - symbol.height() / 2;
+
+    QPainter painter(&pixmap);
+    painter.drawPixmap(x1, y1, symbol, 0, 0, 0, 0);
+    painter.end();
+
+    img = pixmap.toImage();
+    return img;
 }
 
 int BackEnd::framesPerSecond()
@@ -597,6 +615,15 @@ void BackEnd::updateVectorSlot()
     UpdateWindowsList(m_windowHandles);
 }
 
+//void BackEnd::hover(int index)
+//{
+//    if(index >= 0 && index < m_appList->size()) {
+//        HWND hwnd = m_appList->at(index).hwnd;
+//        qDebug() << "preview window " << hwnd;
+//        m_imgpreview = CaptureThread::CaptureWindow(m_screen, hwnd);
+//    }
+//}
+
 std::vector<HWND>* BackEnd::windowVector() {
     return m_windowHandles;
 }
@@ -651,11 +678,17 @@ QString BackEnd::recordingState()
     return "Ready";
 }
 
+PreviewImageProvider::PreviewImageProvider()
+    : QQuickImageProvider(QQuickImageProvider::Image)
+{ }
+
 QImage PreviewImageProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
 {
     Q_UNUSED(id);
     Q_UNUSED(requestedSize);
-    QImage image = BackEnd::getInstance()->imgPreview();
+
+    int index = id.toInt();
+    QImage image = BackEnd::getInstance()->getPreview(index);
     if (size)
         *size = QSize(image.width(), image.height());
     return image;

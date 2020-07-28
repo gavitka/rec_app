@@ -85,7 +85,7 @@ class BackEnd : public QObject
     Q_PROPERTY(int bitRateIndex READ bitRateIndex WRITE setBitRateIndex NOTIFY bitRateIndexChanged)
     Q_PROPERTY(QList<QObject*> frameRateList READ frameRateList NOTIFY frameRateListChanged)
     Q_PROPERTY(int frameRateIndex READ frameRateIndex WRITE setFrameRateIndex NOTIFY frameRateIndexChanged)
-    Q_PROPERTY(AppList* appList READ appList)
+    Q_PROPERTY(AppList* appList READ appList NOTIFY appListChanged)
 
 
     Q_PROPERTY(int mouseX READ mouseX WRITE setMouseX NOTIFY mousePosChanged)
@@ -185,7 +185,7 @@ public:
 
     QSettings *getSettings();
     qint64 getElapsedTime();
-    QImage imgPreview();
+    QImage getPreview(int index);
 
     int framesPerSecond();
 
@@ -234,6 +234,7 @@ signals:
     void recordStatusChanged();
     void stopSignal();
     void startSignal();
+    void appListChanged();
 
 public slots:
 
@@ -255,6 +256,7 @@ public slots:
     void InstallHook();
     void UninstallHook();
     void updateVectorSlot();
+    //void hover(int index);
 
 private:
 
@@ -330,9 +332,7 @@ private:
 class PreviewImageProvider : public QQuickImageProvider {
 
 public:
-    PreviewImageProvider()
-        : QQuickImageProvider(QQuickImageProvider::Image)
-    { }
+    PreviewImageProvider();
 
     QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize);
 };

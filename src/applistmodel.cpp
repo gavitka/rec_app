@@ -10,6 +10,7 @@ QHash<int, QByteArray> AppListModel::roleNames() const
     QHash<int, QByteArray> roles;
     roles[TextRole] = "text";
     roles[SelectedRole] = "selected";
+    roles[FileName] = "filename";
     return roles;
 }
 
@@ -27,6 +28,8 @@ QVariant AppListModel::data(const QModelIndex &index, int role) const
         return m_applist->at(index.row()).name;
     case SelectedRole:
         return m_applist->at(index.row()).selected;
+    case FileName:
+        return m_applist->at(index.row()).exename;
     }
     return false;
 }

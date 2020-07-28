@@ -4,7 +4,7 @@
 
 struct App {
     QString name;
-    //QString exename;
+    QString exename;
     HWND hwnd;
     bool selected = false;
 };
@@ -38,4 +38,5 @@ signals:
 };
 
 QString GetWindowTitle(HWND whnd);
+QString getWindowExeName(HWND hwnd);
 

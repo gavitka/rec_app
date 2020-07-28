@@ -139,6 +139,7 @@ set(LIBS
     mfsensorgroup
     Mfsrcsnk
     mfuuid
+    Kernel32
     )
 
 target_link_libraries(${PROJECT_NAME} ${LIBS})

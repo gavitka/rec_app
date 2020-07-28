@@ -43,108 +43,105 @@ BLWindow {
 
     ColumnLayout {
         anchors.fill: parent
-        RowLayout {
+        Rectangle {
             Layout.fillWidth: true
-            Rectangle {
-                implicitWidth: wnd.width
-                implicitHeight: 200
-                color: Theme.background_color
+            Layout.preferredHeight: 200
+            color: Theme.background_color
 
-                Image {
-                    anchors.fill:parent
-                    fillMode: Image.Stretch
-                    source: "qrc:/images/back.png"
-                }
+            Image {
+                anchors.fill:parent
+                fillMode: Image.Stretch
+                source: "qrc:/images/back.png"
+            }
 
-                RowLayout {
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    Layout.alignment: Qt.AlignRight
-                    spacing: 0
-                    AppButton {
-                        Layout.preferredWidth: 46
-                        Layout.preferredHeight: 30
-                        src:"qrc:/images/collapse.png"
-                        onClicked: wnd.showMinimized()
+            RowLayout {
+                anchors.right: parent.right
+                anchors.top: parent.top
+                Layout.alignment: Qt.AlignRight
+                spacing: 0
+                AppButton {
+                    Layout.preferredWidth: 46
+                    Layout.preferredHeight: 30
+                    src:"qrc:/images/collapse.png"
+                    onClicked: wnd.showMinimized()
+                    }
+                AppButton {
+                    Layout.preferredWidth: 46
+                    Layout.preferredHeight: 30
+                    src: (wnd.visibility === 4) ? "qrc:/images/restore.png" :  "qrc:/images/full.png"
+                    onClicked: (wnd.visibility === 4) ? wnd.showNormal() : wnd.showMaximized()
+                    }
+                AppButton {
+                    Layout.preferredWidth: 46
+                    Layout.preferredHeight: 30
+                    hoverColor: Theme.close_hover
+                    src:"qrc:/images/close.png"
+                    onClicked: {
+                            wnd.close();
                         }
-                    AppButton {
-                        Layout.preferredWidth: 46
-                        Layout.preferredHeight: 30
-                        src: (wnd.visibility === 4) ? "qrc:/images/restore.png" :  "qrc:/images/full.png"
-                        onClicked: (wnd.visibility === 4) ? wnd.showNormal() : wnd.showMaximized()
-                        }
-                    AppButton {
-                        Layout.preferredWidth: 46
-                        Layout.preferredHeight: 30
-                        hoverColor: Theme.close_hover
-                        src:"qrc:/images/close.png"
+                    }
+            }// RowLayout
+
+            RowLayout {
+                spacing: 30
+                width: 350
+                anchors.centerIn: parent
+                Item {
+                    width: recbutton.width
+                    height: recbutton.height
+                    RecButton {
+                        id:recbutton
+                        anchors.fill: parent
+                        height:width
+                        enabled: BackEnd.recordReady
+                        isRecording: BackEnd.isRecording
                         onClicked: {
-                                wnd.close();
+                            if(!isRecording) {
+                                BackEnd.startRecording()
+                            }
+                            else {
+                                BackEnd.stopRecording()
                             }
                         }
-                }// RowLayout
-
-                RowLayout {
-                    spacing: 30
-                    width: 350
-                    anchors.centerIn: parent
-                    Item {
-                        width: recbutton.width
-                        height: recbutton.height
-                        RecButton {
-                            id:recbutton
-                            anchors.fill: parent
-                            height:width
-                            enabled: BackEnd.recordReady
-                            isRecording: BackEnd.isRecording
-                            onClicked: {
-                                if(!isRecording) {
-                                    BackEnd.startRecording()
-                                }
-                                else {
-                                    BackEnd.stopRecording()
-                                }
-                            }
-                        } // RecButton
-                        PauseButton {
-                            id: pausebutton
-                            width: 50
-                            height: width
-                            visible: recbutton.isRecording ? true : false
-                            anchors.bottom: parent.bottom
-                            anchors.right: parent.right
-                            anchors.rightMargin: -10
-                            onClicked: {
-                                BackEnd.pauseRecording()
-                                buttonToggled = !buttonToggled
-                            }
+                    } // RecButton
+                    PauseButton {
+                        id: pausebutton
+                        width: 50
+                        height: width
+                        visible: recbutton.isRecording ? true : false
+                        anchors.bottom: parent.bottom
+                        anchors.right: parent.right
+                        anchors.rightMargin: -10
+                        onClicked: {
+                            BackEnd.pauseRecording()
+                            buttonToggled = !buttonToggled
                         }
-                    } // Item
-                    ColumnLayout{
+                    }
+                } // Item
+                ColumnLayout{
+                    Layout.fillWidth: true
+                    implicitWidth: 200
+                    Label {
                         Layout.fillWidth: true
-                        implicitWidth: 200
-                        Label {
-                            Layout.fillWidth: true
-                            id: status
-                            color: Theme.button_color
-                            text: BackEnd.recordingState
-                            font.pointSize: 21
-                            font.weight: Font.DemiBold
-                        }
-                        Label {
-                            color: "white"
-                            font.pointSize: 10
-                            text: BackEnd.recordingTime
-                        }
-                        Label {
-                            color: "white"
-                            font.pointSize: 10
-                            text: BackEnd.statusLine
-                        }
-                    } // ColumnLayout
-                } // RowLayout
-            } // Rectangle
-        } // RowLayout
+                        id: status
+                        color: Theme.button_color
+                        text: BackEnd.recordingState
+                        font.pointSize: 21
+                        font.weight: Font.DemiBold
+                    }
+                    Label {
+                        color: "white"
+                        font.pointSize: 10
+                        text: BackEnd.recordingTime
+                    }
+                    Label {
+                        color: "white"
+                        font.pointSize: 10
+                        text: BackEnd.statusLine
+                    }
+                } // ColumnLayout
+            } // RowLayout
+        } // Rectangle
         Flickable{
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -154,11 +151,10 @@ BLWindow {
                 width: parent.width
                 ColumnLayout {
                     id: child
-                    anchors.margins: 40
+                    anchors.margins: 32
                     anchors.right: parent.right
                     anchors.left: parent.left
-                    width: parent.width - 80
-                    spacing:10;
+                    spacing: 10
                     Label {
                         Layout.fillWidth: true
                         text: "File"
@@ -351,56 +347,39 @@ BLWindow {
                             font.pointSize: 14
                         }
                     } // GridLayout
-                    /* --
-                    Label {
-                        Layout.fillWidth: true
-                        text: "Window"
-                        font.pointSize: 14
-                        visible: BackEnd.recMode
+//                    Label {
+//                        Layout.fillWidth: true
+//                        text: "Window"
+//                        font.pointSize: 14
+//                        visible: BackEnd.recMode
 
-                    }
-                    Label {
-                        Layout.fillWidth: true
-                        text: "Select window to record."
-                        font.pointSize: 10
-                        wrapMode: Text.WordWrap
-                        visible: BackEnd.recMode
-                    }
-                    ComboBox{
-                        visible: BackEnd.recMode
-                        id:windowList
-                        Layout.fillWidth: true
-                        model:BackEnd.windowList
-                        textRole: "name"
-                        enabled: BackEnd.lockParam
-                        Binding { target: BackEnd
-                            property: "windowIndex"
-                            value: windowList.currentIndex
-                        }
-                        Binding { target: windowList
-                            property: "currentIndex"
-                            value: BackEnd.windowIndex
-                        }
-                        onPressedChanged: {
-                            BackEnd.getWindowsList()
-                        }
-                    } //
-                    Rectangle {
-                        Layout.margins: 10
-                        Layout.alignment: Qt.AlignCenter
-                        color: Universal.background
-                        width:300
-                        height:200
-                        border.width: 2
-                        border.color: "black"
-                        Image{
-                            source: BackEnd.imageSource
-                            anchors.fill: parent
-                            anchors.margins: 2
-                            fillMode: Image.PreserveAspectFit
-                        }
-                    } // Rectangle
-                    -- */
+//                    }
+//                    Label {
+//                        Layout.fillWidth: true
+//                        text: "Select window to record."
+//                        font.pointSize: 10
+//                        wrapMode: Text.WordWrap
+//                        visible: BackEnd.recMode
+//                    }
+//                    ComboBox{
+//                        visible: BackEnd.recMode
+//                        id:windowList
+//                        Layout.fillWidth: true
+//                        model:BackEnd.windowList
+//                        textRole: "name"
+//                        enabled: BackEnd.lockParam
+//                        Binding { target: BackEnd
+//                            property: "windowIndex"
+//                            value: windowList.currentIndex
+//                        }
+//                        Binding { target: windowList
+//                            property: "currentIndex"
+//                            value: BackEnd.windowIndex
+//                        }
+//                        onPressedChanged: {
+//                            BackEnd.getWindowsList()
+//                        }
+//                    } //
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 42
@@ -426,6 +405,8 @@ BLWindow {
                     AppList {
                         id: appListView
                         Layout.fillWidth: true
+                        Layout.topMargin: 12
+                        Layout.bottomMargin: 12
                         height: 350
                     }
                     Label {
@@ -435,10 +416,16 @@ BLWindow {
                     }
                     Label {
                         Layout.fillWidth: true
-                        text: "If a seleected windows will not receive mouse input for 3 seconds " +
+                        text: "If a selected windows will not receive mouse input for 3 seconds " +
                               "recording will pause until next time mouse is moved."
                         font.pointSize: 10
                         wrapMode: Text.WordWrap
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onEntered: thumbnailRect.show = true
+                            onExited: thumbnailRect.show = false
+                        }
                     }
                     RowLayout{
                         Layout.fillWidth: true
@@ -461,9 +448,52 @@ BLWindow {
             ScrollBar.vertical: ScrollBar { }
         } // Flickable
     } // ColumnLayout
+
     OpenFolderDialog {
         id: openFolderDialog
         folder: BackEnd.fileUrl
         onAccepted: BackEnd.filePath = openFolderDialog.folder
     }
-}
+
+    Rectangle {
+        id: thumbnailRect
+        width: parent.width
+        height: 200
+        anchors.bottom: parent.bottom
+        visible: true
+        color: Theme.button_hover_cover
+
+        property bool show: false
+
+        state: show ? "show" : "hide"
+
+        Image{
+            width: 300
+            height: 200
+            anchors.centerIn: parent
+            id: thumbnail
+            source: "image://previewprovider"
+            fillMode: Image.PreserveAspectFit
+        }
+
+        transform: Translate { id: thumbnailTransform; y: 200 }
+
+        states: [
+            State {
+                name : "show"
+                PropertyChanges { target: thumbnailTransform; y: 0 }
+            },
+            State {
+                name : "hide"
+                PropertyChanges { target: thumbnailTransform; y: 200 }
+            }
+        ]
+
+        transitions: Transition {
+            SequentialAnimation {
+                NumberAnimation { property: "y"; duration: 100 }
+                ScriptAction { script: { thumbnailRect.visible = thumbnailRect.show } }
+            }
+        }
+    } // Rectangle: thumbnailRect
+} // BLWindow
