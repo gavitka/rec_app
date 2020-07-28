@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.18)
 
-include_directories(
-    "D:/dev/lib/ffmpeg_build/inc"
-    "D:/dev/lib/x264/"
-    )
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-link_directories(
-    "D:/dev/lib/ffmpeg_build/prefix/lib"
-    "D:/dev/lib/x264/installed/lib/"
-    )
+find_package(ffmpeg REQUIRED)
+find_package(x264 REQUIRED)
+
+include_directories(
+    ${FFMPEG_INC_DIR}
+    ${LIBX264_INCLUDE_DIR}
+)
 
 project("time_lapse_rec")
 
@@ -97,7 +97,8 @@ set(CMAKE_EXE_LINKER_FLAGS
     "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMT")
 
 # Do i really need to link all this SHIT?
-set(LIBRARIES
+
+set(LIBS
     Qt5::Widgets
     Qt5::Core
     Qt5::Qml
@@ -105,15 +106,15 @@ set(LIBRARIES
     Qt5::Multimedia
     Qt5::WinExtras
     dwmapi
-    D:/dev/lib/x264/installed/lib/libx264.lib
-    D:/dev/lib/ffmpeg_build/prefix/lib/libavcodec.a
-    D:/dev/lib/ffmpeg_build/prefix/lib/libavdevice.a
-    D:/dev/lib/ffmpeg_build/prefix/lib/libavfilter.a
-    D:/dev/lib/ffmpeg_build/prefix/lib/libavformat.a
-    D:/dev/lib/ffmpeg_build/prefix/lib/libavutil.a
-    D:/dev/lib/ffmpeg_build/prefix/lib/libpostproc.a
-    D:/dev/lib/ffmpeg_build/prefix/lib/libswresample.a
-    D:/dev/lib/ffmpeg_build/prefix/lib/libswscale.a
+    ${FFMPEG_LIBX264}
+    ${FFMPEG_LIBAVCODEC}
+    ${FFMPEG_LIBAVDEVICE}
+    ${FFMPEG_LIBAVFILTER}
+    ${FFMPEG_LIBAVFORMAT}
+    ${FFMPEG_LIBAVUTIL}
+    ${FFMPEG_LIBPOSTPROC}
+    ${FFMPEG_LIBSWRESAMPLE}
+    ${FFMPEG_LIBSWSCALE}
     bcrypt
     gdi32
     kernel32
@@ -140,7 +141,8 @@ set(LIBRARIES
     mfuuid
     )
 
-target_link_libraries(${PROJECT_NAME} ${LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${LIBS})
+
 target_link_libraries(${PROJECT_NAME} ${PROJECT_DLL})
 
 target_link_libraries(${PROJECT_DLL} Qt5::Core)
