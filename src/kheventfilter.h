@@ -8,7 +8,7 @@
 #include "stdio.h"
 #include "backend.h"
 
-#define WM_KEYSTROKE (WM_USER + 101)
+#include "hooks_dll/mousehook.h"
 
 class KhEventFilter : public QAbstractNativeEventFilter
 {
@@ -19,7 +19,10 @@ public:
         Q_UNUSED(eventType)
         MSG* msg = (MSG*)(message);
         if(msg->message == WM_KEYSTROKE) {
+            // Chrome is sending messages for some reason
             POINT mpt = msg->pt;
+            //qDebug() << "eventType" << eventType;
+            //qDebug() << "msg->message" << msg->message;
             BackEnd::getInstance()->setMouseX(mpt.x);
             BackEnd::getInstance()->setMouseY(mpt.y);
             BackEnd::getInstance()->kick();

@@ -29,6 +29,9 @@
 #define HOOKS
 //#undef HOOKS
 
+#define TIMEOUT1 8
+#define TIMEOUT2 1
+
 using namespace WinToastLib;
 
 BackEnd* BackEnd::m_instance = nullptr;
@@ -697,8 +700,10 @@ void BackEnd::InstallHook()
     if(!wnd) return;
 #ifdef HOOKS
     if(!m_hooksActive) {
-        //qDebug() << "installing hooks";
+        qDebug() << "installing hooks";
         InstallMultiHook((HWND)wnd->winId());
+        // TODO: connect window object
+        updateVectorSlot();
         m_hooksActive = true;
     }
 #endif
@@ -708,7 +713,7 @@ void BackEnd::UninstallHook()
 {
 #ifdef HOOKS
     if(m_hooksActive) {
-        //qDebug() << "uninstalling hooks";
+        qDebug() << "uninstalling hooks";
         UninstallMultiHook();
         m_hooksActive = false;
     }
@@ -719,6 +724,8 @@ void BackEnd::updateVectorSlot()
 {
     // Ask applist to create window handles
     m_appList->updateVector(m_windowHandles);
+    // Update Windows List in dll
+    UpdateWindowsList(m_windowHandles);
 }
 
 void BackEnd::selectedChangedSlot()
@@ -733,14 +740,14 @@ std::vector<HWND>* BackEnd::windowVector() {
 void BackEnd::initCheckActivity()
 {
     if(!m_notifyMode) return;
-    m_activitytimer.setInterval(30 * 1000);
+    m_activitytimer.setInterval(TIMEOUT1 * 1000);
     m_activitytimer.start();
 }
 
 void BackEnd::startCheckActivity()
 {
     InstallHook();
-    m_activitytimer_small.setInterval(5 * 1000);
+    m_activitytimer_small.setInterval(TIMEOUT2 * 1000);
     m_activitytimer_small.setSingleShot(true);
     m_activitytimer_small.start();
     m_checkactivity = true;

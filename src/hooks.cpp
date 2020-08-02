@@ -9,6 +9,8 @@ extern HWND g_hwnd;
 
 void InstallHook(HWND hwnd)
 {
+    return;
+
     // Getting the thread of the window and the PID
     DWORD pid = NULL;
     DWORD tid = GetWindowThreadProcessId(hwnd, &pid);
@@ -38,6 +40,7 @@ void InstallHook(HWND hwnd)
 
 void UninstallHook(HWND hwnd)
 {
+    return;
     std::vector<std::pair<HWND, HHOOK>>::iterator it;
     it = g_hookList.begin();
 

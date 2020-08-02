@@ -54,14 +54,16 @@ LRESULT CALLBACK MultiHookProc(int nCode, WPARAM wParam, LPARAM lParam)
     if (nCode < 0 || nCode == HC_NOREMOVE) {
         return ::CallNextHookEx(g_hHook, nCode, wParam, lParam);
     }
-
+    //qDebug() << "active" << ::GetForegroundWindow();
+    //qDebug() << "g_targets->size()" << g_targets->size();
     if(g_targets->size() == 0) {
-        PostMessage(g_hWnd, WM_KEYSTROKE, wParam, lParam);
+        //PostMessage(g_hWnd, WM_KEYSTROKE, wParam, lParam);
     }
 
     else {
         for(auto t : *g_targets) {
             if((HWND)t == ::GetForegroundWindow()) {
+                //qDebug() << "target" << t;
                 PostMessage(g_hWnd, WM_KEYSTROKE, wParam, lParam);
             }
         }
@@ -85,6 +87,8 @@ void UninstallMultiHook()
 
 void UpdateWindowsList(std::vector<HWND>* vector)
 {
+    // copy vector
+    qDebug() << "update windows list";
     g_targets->clear();
     for(HWND k : *vector) {
         g_targets->push_back(k);

@@ -253,7 +253,7 @@ bool BLWindow::maximized(HWND hwnd)
     return placement.showCmd == SW_MAXIMIZE;
 }
 
-void BLWindow:: adjust_maximized_client_rect(HWND window, RECT& rect)
+void BLWindow::adjust_maximized_client_rect(HWND window, RECT& rect)
 {
     if (!maximized(window)) {
         return;
