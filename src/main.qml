@@ -4,8 +4,8 @@ import QtQuick.Layouts 1.12
 import QtQuick.Controls 2.12
 import QtQuick.Controls.Universal 2.12
 import Qt.labs.settings 1.0
-import kh.components 1.0
 
+import kh.components 1.0
 import Theme 1.0
 import "Components"
 
@@ -145,6 +145,7 @@ BLWindow {
             } // RowLayout
         } // Rectangle
         Flickable{
+            id: mainFlick
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
@@ -446,6 +447,38 @@ BLWindow {
                             font.weight: Font.DemiBold
                         }
                     } // RowLayout
+                    Label {
+                        Layout.fillWidth: true
+                        text: "Notify"
+                        font.pointSize: 14
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: "Show toast message when recording is not active."
+                        font.pointSize: 10
+                        wrapMode: Text.WordWrap
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onEntered: thumbnailRect.show = true
+                            onExited: thumbnailRect.show = false
+                        }
+                    }
+                    RowLayout{
+                        Layout.fillWidth: true
+                        Switch {
+                            id: notifyMode
+                            width: 20
+                            checked: BackEnd.notifyMode
+                            onClicked: BackEnd.notifyMode = checked
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            text: notifyMode.checked ? "On" : "Off"
+                            font.pointSize: 16
+                            font.weight: Font.DemiBold
+                        }
+                    } // RowLayout
                 } // ColumnLayout
             } // MouseArea
 
@@ -500,4 +533,10 @@ BLWindow {
             }
         }
     } // Rectangle: thumbnailRect
+
+    NotificationWindow {
+
+    } // Window
+
 } // BLWindow
+

@@ -32,14 +32,17 @@ qt5_add_resources(QTRESOURCES src/res.qrc)
 
 file(GLOB_RECURSE SRC_UI
     src/main.qml
+    src/notification.qml
     src/qtquickcontrols2.conf
     src/imports/Theme/Theme.qml
     src/Components/AppList.qml
+    src/Components/AppButton.qml
     src/Components/OpenFolderDialog.qml
     src/Components/PauseButton.qml
     src/Components/RecButton.qml
     src/Components/TopButton.qml
     src/Components/RefreshButton.qml
+    src/Components/NotificationWindow.qml
 )
 
 set(RESOURCES
@@ -55,8 +58,8 @@ add_executable(${PROJECT_NAME} WIN32
     src/capturethread.cpp
     src/capturethread.h
     src/kheventfilter.h
-    src/perfomancetimer.cpp
-    src/perfomancetimer.h
+    src/performancetimer.cpp
+    src/performancetimer.h
     src/applist.cpp
     src/applist.h
     src/pch.h
@@ -64,6 +67,12 @@ add_executable(${PROJECT_NAME} WIN32
     src/lib.cpp
     src/blwindow.h
     src/blwindow.cpp
+
+    lib/wintoastlib.h
+    lib/wintoastlib.cpp
+
+    src/hooks.h
+    src/hooks.cpp
 
     README.md
     installer/installer.nsi

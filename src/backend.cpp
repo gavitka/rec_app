@@ -2,26 +2,25 @@
 
 #include "backend.h"
 
-#include <QDataStream>
-#include <QFile>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <QDataStream>
+#include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QScreen>
 #include <QTextStream>
 #include <QWindow>
-
 #include <QWidget>
 #include <QtWidgets>
 #include <QPixmap>
 #include <QQmlApplicationEngine>
 #include <QDir>
 #include <QRegularExpression>
-
 #include <QThread>
+#include <QMessageBox>
 
 #include "capturethread.h"
 #include "hooks_dll/mousehook.h"
@@ -30,9 +29,49 @@
 #define HOOKS
 //#undef HOOKS
 
+using namespace WinToastLib;
+
 BackEnd* BackEnd::m_instance = nullptr;
 
 extern BLWindow* wnd;
+
+class CustomHandler : public WinToastLib::IWinToastHandler {
+public:
+    void toastActivated() const {
+        qDebug() << "The user clicked in this toast";
+        wnd->requestActivate();
+    }
+
+    void toastActivated(int actionIndex) const {
+        qDebug() << "The user clicked on button #" << actionIndex << L" in this toast";
+        wnd->requestActivate();
+        // TODO: Show Window
+    }
+
+    void toastFailed() const {
+        qDebug() << "Error showing current toast";
+    }
+    void toastDismissed(WinToastDismissalReason state) const {
+        switch (state) {
+        case UserCanceled:
+            qDebug() << "The user dismissed this toast";
+            BackEnd::getInstance()->setNotifyMode(false);
+            break;
+        case ApplicationHidden:
+            qDebug() << "The application hid the toast using ToastNotifier.hide()";
+            break;
+        case TimedOut:
+            qDebug() << "The toast has timed out";
+            // TODO: Do nothink
+            break;
+        default:
+            qDebug() << "Toast not activated";
+            break;
+        }
+    }
+};
+
+
 
 QObject *BackEnd::qmlInstance(QQmlEngine *engine, QJSEngine *scriptEngine) {
     Q_UNUSED(engine)
@@ -49,9 +88,9 @@ BackEnd *BackEnd::getInstance() {
 
 BackEnd::BackEnd(QObject *parent) :
     QObject(parent),
-//    m_hwnd(nullptr),
     m_settings("Gavitka software", "Time lapse recorder"),
-    m_recordTimer()
+    m_recordTimer(),
+    m_activitytimer(this)
 {
     m_windowHandles = new std::vector<HWND>;
 
@@ -85,33 +124,66 @@ BackEnd::BackEnd(QObject *parent) :
     m_frameRateList.append(new ListElement(FRAMERATES::x8, "8x"));
     m_frameRateList.append(new ListElement(FRAMERATES::x16, "16x"));
 
-//    m_imgpreview = QImage(300, 200, QImage::Format_RGBA8888);
-//    m_imgpreview.fill(qRgb(66, 66, 66));
     m_screen = QGuiApplication::primaryScreen();
 
-//    m_windowName = m_settings.value("windowName").toString();
-//    getWindowsList();
-
-    m_appList = new AppList(nullptr); // Application list model
+    // Application list model
+    m_appList = new AppList(nullptr);
     connect(m_appList, &AppList::selectedChanged, this, &BackEnd::selectedChangedSlot);
     m_appList->update();
 
-    // setImageSource("image://preview/");
-    if (wnd) m_screen = wnd->screen();
+    if (wnd != nullptr) m_screen = wnd->screen();
     refreshUI();
+
+    m_activitytimer.callOnTimeout(this, &BackEnd::startCheckActivity);
+    m_activitytimer_small.callOnTimeout(this, &BackEnd::stopCheckAvtivity);
+
+    WinToast::instance()->setAppName(QCoreApplication::applicationName().toStdWString());
+    WinToast::instance()->setAppUserModelId(
+                WinToast::configureAUMI(QCoreApplication::organizationName().toStdWString(),
+                                        L"rec_app",
+                                        L"rec_app",
+                                        L"1.0")); // TODO: update
+    if (!WinToast::instance()->initialize()) {
+        qDebug() << "Error, your system in not compatible!";
+    }
+
+    m_templ = WinToastTemplate(WinToastTemplate::Text02);
+    m_templ.setTextField(
+                QString("Bruh...").toStdWString(),
+                WinToastTemplate::FirstLine);
+    m_templ.setTextField(
+                (QString("Looks like you are active on windows that ") +
+                        "you selected. Didn't you kinda forget " +
+                        "to start recording?").toStdWString(),
+                WinToastTemplate::SecondLine);
+    m_templ.setAudioPath(WinToastTemplate::AudioSystemFile::Reminder);
+    m_templ.setDuration(WinToastTemplate::Duration::System);
+
+    setNotifyMode(m_settings.value("notifyMode").toBool());
 }
+
 
 BackEnd::~BackEnd()
 {
+    UninstallHook();
     delete m_screen;
 }
 
+
 void BackEnd::kick()
 {
+    //qDebug() << "being kicked";
     if(m_capture != nullptr) {
         m_capture->kick();
     }
+    if(m_checkactivity) {
+        if (WinToast::instance()->showToast(m_templ, new CustomHandler()) < 0) {
+            throw new std::exception("Could not launch your toast notification!");
+        }
+        stopCheckAvtivity();
+    }
 }
+
 
 QString BackEnd::startButtonText()
 {
@@ -128,11 +200,14 @@ QString BackEnd::startButtonText()
     return ret;
 }
 
+
 void BackEnd::startRecording()
 {
     if(recordStatus() != RECORD_STATUS::Idle) return;
 
     if(m_recMode == RECORD_MODE::Window && m_appList->size() <= 0) return;
+
+    clearCheckActivity();
 
     m_capture = new CaptureWorker();
     m_capture->moveToThread(&m_thread);
@@ -163,6 +238,7 @@ void BackEnd::startRecording()
     emit startSignal();
 }
 
+
 void BackEnd::pauseRecording()
 {
      if(recordStatus() == RECORD_STATUS::Rec || recordStatus() == RECORD_STATUS::Pause) {
@@ -176,8 +252,10 @@ void BackEnd::pauseRecording()
      }
 }
 
+
 void BackEnd::stopRecording()
 {
+    initCheckActivity();
     if(m_capture != nullptr && m_thread.isRunning()) {
         m_recordTime +=  m_recordTimer.elapsed();
         m_timer->stop();
@@ -186,16 +264,19 @@ void BackEnd::stopRecording()
     }
 }
 
+
 void BackEnd::handleResults()
 {
      m_capture = nullptr;
      m_thread.quit();
      m_thread.wait();
      if(m_windowCloseFlag == true) {
+         clearCheckActivity();
          emit closeReady();
      }
      refreshUI();
 }
+
 
 void BackEnd::refreshUI()
 {
@@ -203,20 +284,24 @@ void BackEnd::refreshUI()
     emit statusChanged();
 }
 
+
 bool BackEnd::lockParam()
 {
     return (recordStatus() == RECORD_STATUS::Idle) ? true : false;
 }
+
 
 int BackEnd::recordStatus()
 {
     return (m_capture == nullptr) ? RECORD_STATUS::Idle :  m_capture->status();
 }
 
+
 bool BackEnd::recMode()
 {
     return (m_recMode == RECORD_MODE::Window) ? true : false;
 }
+
 
 void BackEnd::setRecMode(bool value)
 {
@@ -225,14 +310,14 @@ void BackEnd::setRecMode(bool value)
 
     emit recModeChanged();
     emit recordReadyChanged();
-//    refreshImage();
-//    setImageSource("image://preview/");
 }
+
 
 int BackEnd::recordMode()
 {
     return m_recMode;
 }
+
 
 void BackEnd::setRecordMode(int value)
 {
@@ -240,9 +325,6 @@ void BackEnd::setRecordMode(int value)
     emit recModeChanged();
 }
 
-//int BackEnd::windowIndex() {
-//    return m_windowIndex;
-//}
 
 QString BackEnd::recordingTime()
 {
@@ -308,18 +390,6 @@ QString BackEnd::fileLabel()
     return s;
 }
 
-//QString BackEnd::imageSource()
-//{
-//    return m_imageSource;
-//}
-
-//void BackEnd::setImageSource(QString value)
-//{
-//    int x = QRandomGenerator::global()->generate();
-//    m_imageSource = value + QString::number(x);
-//    emit imageSourceChanged();
-//}
-
 bool BackEnd::sleepMode()
 {
     return m_sleepMode;
@@ -331,6 +401,26 @@ void BackEnd::setSleepMode(bool value)
     m_settings.setValue("sleepMode", value);
     emit sleepModeChanged();
 }
+
+bool BackEnd::notifyMode()
+{
+    return m_notifyMode;
+}
+
+
+void BackEnd::setNotifyMode(bool value)
+{
+    m_notifyMode = value;
+    if(m_notifyMode == true && !m_activitytimer.isActive()) {
+        initCheckActivity();
+    }
+    if(m_notifyMode == false && m_activitytimer.isActive()) {
+        clearCheckActivity();
+    }
+    m_settings.setValue("notifyMode", value);
+    emit notifyModeChanged();
+}
+
 
 QList<QObject*> BackEnd::resolutionList()
 {
@@ -415,16 +505,6 @@ int BackEnd::getHeight()
 {
     return m_height;
 }
-
-//void BackEnd::refreshImage()
-//{
-//    if(recMode() == RECORD_MODE::Window) {
-//        m_imgpreview = CaptureWorker::CaptureWindow(m_screen, m_hwnd);
-//    } else {
-//        m_imgpreview = CaptureWorker::CaptureScreen(m_screen);
-//    }
-//    emit imageSourceChanged();
-//}
 
 void BackEnd::setResolutionIndex(int value)
 {
@@ -572,6 +652,14 @@ void BackEnd::setMouseY(int value)
     emit mousePosChanged();
 }
 
+bool BackEnd::isSleeping()
+{
+    if(m_capture != nullptr) {
+        return m_capture->sleeping();
+    }
+    return false;
+}
+
 AppList *BackEnd::appList()
 {
     return m_appList;
@@ -592,6 +680,7 @@ void BackEnd::statusChangedSlot()
 void BackEnd::sleepingChangedSlot()
 {
     refreshUI();
+    emit sleepingChanged();
 }
 
 void BackEnd::close() {
@@ -604,15 +693,25 @@ void BackEnd::close() {
 
 void BackEnd::InstallHook()
 {
+    // If stop debugger whilst hooks are installed debugger hangs T_T
+    if(!wnd) return;
 #ifdef HOOKS
-    InstallMultiHook((HWND)wnd->winId());
+    if(!m_hooksActive) {
+        //qDebug() << "installing hooks";
+        InstallMultiHook((HWND)wnd->winId());
+        m_hooksActive = true;
+    }
 #endif
 }
 
 void BackEnd::UninstallHook()
 {
 #ifdef HOOKS
-    UninstallMultiHook();
+    if(m_hooksActive) {
+        //qDebug() << "uninstalling hooks";
+        UninstallMultiHook();
+        m_hooksActive = false;
+    }
 #endif
 }
 
@@ -620,8 +719,6 @@ void BackEnd::updateVectorSlot()
 {
     // Ask applist to create window handles
     m_appList->updateVector(m_windowHandles);
-    // updates windows list in DLL
-    UpdateWindowsList(m_windowHandles);
 }
 
 void BackEnd::selectedChangedSlot()
@@ -629,23 +726,40 @@ void BackEnd::selectedChangedSlot()
     emit recordReadyChanged();
 }
 
-//void BackEnd::hover(int index)
-//{
-//    if(index >= 0 && index < m_appList->size()) {
-//        HWND hwnd = m_appList->at(index).hwnd;
-//        qDebug() << "preview window " << hwnd;
-//        m_imgpreview = CaptureThread::CaptureWindow(m_screen, hwnd);
-//    }
-//}
-
 std::vector<HWND>* BackEnd::windowVector() {
     return m_windowHandles;
 }
 
-//HWND BackEnd::getHwnd()
-//{
-//    return m_hwnd;
-//}
+void BackEnd::initCheckActivity()
+{
+    if(!m_notifyMode) return;
+    m_activitytimer.setInterval(30 * 1000);
+    m_activitytimer.start();
+}
+
+void BackEnd::startCheckActivity()
+{
+    InstallHook();
+    m_activitytimer_small.setInterval(5 * 1000);
+    m_activitytimer_small.setSingleShot(true);
+    m_activitytimer_small.start();
+    m_checkactivity = true;
+}
+
+void BackEnd::stopCheckAvtivity()
+{
+    UninstallHook();
+    m_checkactivity = false;
+}
+
+void BackEnd::clearCheckActivity()
+{
+    m_activitytimer.stop();
+    m_activitytimer_small.stop();
+    stopCheckAvtivity();
+    UninstallHook();
+}
+
 
 QString BackEnd::filePrefix()
 {
@@ -692,22 +806,53 @@ QImage ThumbProvider::requestImage(const QString &id, QSize *size, const QSize &
     return image;
 }
 
+// TODO: play with whis funciton
+//void BackEnd::ChangeState(States request_state)
+//{
+//    if(request_state == IdleState) {
+//        // stop Recording
+//        // set up check timer
+//    }
 
-BOOL CALLBACK getWindowsListCallback(HWND hwnd, LPARAM lParam)
-{
-    const DWORD TITLE_SIZE = 1024;
-    WCHAR windowTitle[TITLE_SIZE];
+//    if(request_state == CheckActivityState) {
+//        // install hooks
+//        // install end of checking timeout
+//    }
 
-    GetWindowTextW(hwnd, windowTitle, TITLE_SIZE);
+//    if()
 
-    int length = ::GetWindowTextLength(hwnd);
-    std::wstring title(&windowTitle[0]);
-    if (!IsWindowVisible(hwnd) || length == 0 || title == L"Program Manager") {
-        return TRUE;
-    }
 
-    QList<QObject*>& dataList = *reinterpret_cast<QList<QObject*>*>(lParam);
-    dataList.append(new WindowObject(hwnd, QString::fromStdWString(windowTitle)));
+//    if(m_currentstate == IdleState && request_state == CheckActivityState) {
+//        m_activitytimer.setInterval(20 * 1000);
+//        connect(&m_activitytimer, &QTimer::timeout, this, &BackEnd::CheckActivity);
+//        m_activitytimer.start();
 
-    return TRUE;
-}
+//        m_currentstate = request_state;
+//        return;
+//    }
+
+//    // State2
+//    if(m_currentstate == CheckActivityState && request_state == IdleState) {
+//        m_activitytimer.stop();
+//        UninstallHook();
+
+//        m_currentstate = request_state;
+//        return;
+//    }
+
+//    if(m_currentstate == IdleState && request_state == RecordState) {
+//        //Quick Code
+
+//        m_currentstate = request_state;
+//        return;
+//    }
+
+//    if(m_currentstate == RecordState && request_state == IdleState) {
+//        //Quick Code
+
+//        m_currentstate = request_state;
+//        return;
+//    }
+
+//    return;
+//}

@@ -1,8 +1,10 @@
 <RCC>
     <qresource prefix="/">
         <file>main.qml</file>
+
         <file>imports/Theme/qmldir</file>
         <file>imports/Theme/Theme.qml</file>
+
         <file>Components/PauseButton.qml</file>
         <file>Components/RecButton.qml</file>
         <file>Components/OpenFolderDialog.qml</file>
@@ -10,6 +12,8 @@
         <file>Components/RefreshButton.qml</file>
         <file>Components/AppList.qml</file>
         <file>Components/AppButton.qml</file>
+        <file>Components/NotificationWindow.qml</file>
+
         <file>../images/logo.ico</file>
         <file>../images/square_icon.png</file>
         <file>../images/cursor.png</file>
@@ -22,5 +26,6 @@
         <file>../images/full.png</file>
         <file>../images/back.png</file>
         <file>../images/na.png</file>
+        <file>../images/rec_small.png</file>
     </qresource>
 </RCC>

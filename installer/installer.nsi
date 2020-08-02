@@ -20,7 +20,7 @@ Unicode True
 !define ABOUTURL "http://..." # "Publisher" link
 
 # This is the size (in kB) of all the files copied into "Program Files"
-!define INSTALLSIZE 166404
+!define INSTALLSIZE 98693
  
 RequestExecutionLevel admin
  

@@ -11,7 +11,9 @@ videos of digital artwork. For Windows only.
 
 ## TODO:
 
-- [ ] Textarea dont lose focus
+- [ ] Recording status window
+- [ ] Not recordnig alert
+- [ ] Textarea don't lose focus
 - [ ] Capture cursor
 - [ ] Update UI for window selection
 - [ ] Get rid of pesky QML binding loops

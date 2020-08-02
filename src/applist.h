@@ -7,6 +7,7 @@ struct App {
     QString exename;
     HWND hwnd;
     bool selected = false;
+    bool hook;
 };
 
 BOOL CALLBACK getWindowsListCallback2(HWND hwnd, LPARAM lParam);
@@ -25,6 +26,7 @@ public:
     void addWindows(QVector<HWND>* add_list);
     void updateVector(std::vector<HWND>* vector);
     bool isSelected();
+//    void installHooks();
 
 private:
 

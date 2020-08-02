@@ -10,7 +10,9 @@
 #include "applistmodel.h"
 #include "blwindow.h"
 
-BLWindow* wnd;
+BLWindow* wnd = nullptr;
+
+HWND g_hwnd;
 
 int main(int argc, char *argv[])
 {
@@ -24,7 +26,6 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName("Gavitka software");
     QCoreApplication::setOrganizationDomain("gavitka.com");
     QCoreApplication::setApplicationName("Time lapse rec");
-
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
     QGuiApplication app(argc, argv);
@@ -32,7 +33,6 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 
     engine.addImportPath(":/imports");
-
 
     qmlRegisterType<BLWindow>("kh.components", 1, 0, "BLWindow");
     qmlRegisterSingletonType<BackEnd>("kh.components", 1, 0, "BackEnd", &BackEnd::qmlInstance);
@@ -44,7 +44,9 @@ int main(int argc, char *argv[])
 
     auto obj = engine.rootObjects().at(0);
     if( !(wnd = qobject_cast<BLWindow*>(obj) ))
-        return -1;
+        throw std::exception("Unable to cast window");
+
+    g_hwnd = (HWND)wnd->winId();
 
     app.installNativeEventFilter(new KhEventFilter());
 

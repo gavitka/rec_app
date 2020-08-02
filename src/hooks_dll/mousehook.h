@@ -22,3 +22,5 @@ MOUSEHOOK_API void InstallMultiHook(HWND hwndCaller);
 MOUSEHOOK_API void UninstallMultiHook();
 
 MOUSEHOOK_API void UpdateWindowsList(std::vector<HWND>* vector);
+
+//extern "C" MOUSEHOOK_API LRESULT CALLBACK MultiHookProc2(int nCode, WPARAM wParam, LPARAM lParam);

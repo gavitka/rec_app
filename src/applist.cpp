@@ -2,6 +2,7 @@
 
 #include "applist.h"
 #include "psapi.h"
+#include "hooks.h"
 
 
 BOOL CALLBACK getWindowsListCallback2(HWND hwnd, LPARAM lParam)
@@ -56,14 +57,26 @@ bool AppList::isSelected()
     return false;
 }
 
+//void AppList::installHooks()
+//{
+//    for(auto w : m_data) {
+//        if(w.hook == false) {
+//            InstallHook(w.hwnd);
+//            w.hook = true;
+//        }
+//    }
+//}
+
 int AppList::windowsExists(HWND hwnd)
 {
     QString title = GetWindowTitle(hwnd);
+    QString exename = getWindowExeName(hwnd);
 
     // TODO: better check for existing windows
     for(int i = 0; i < m_data.size(); ++i) {
         if(m_data[i].name == title ||
-               m_data[i].hwnd == hwnd) {
+               m_data[i].hwnd == hwnd ||
+               m_data[i].exename == exename ) {
             return i;
         }
     }
@@ -154,7 +167,7 @@ QString getWindowExeName(HWND hwnd)
 {
     WCHAR fileName[MAX_PATH];
     DWORD dwPID;
-    GetWindowThreadProcessId(hwnd, &dwPID);
+    ::GetWindowThreadProcessId(hwnd, &dwPID);
     HANDLE Handle = ::OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, dwPID);
     if(!Handle) return QString("");
 

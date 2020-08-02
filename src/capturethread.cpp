@@ -10,7 +10,6 @@
 
 #include "backend.h"
 #include "hooks_dll/mousehook.h"
-#include "perfomancetimer.h"
 #include "windows.h"
 #include "blwindow.h"
 
@@ -166,7 +165,7 @@ void CaptureWorker::Capture()
         return;
     }
 
-    qDebug() << "working";
+    //qDebug() << "working";
 
     // TODO: Add mutex
     QElapsedTimer frametimer;

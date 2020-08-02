@@ -13,12 +13,17 @@ static HWND g_hWnd = nullptr;
 static HHOOK g_hHook;
 static std::vector<HWND>* g_targets;
 
+//static HWND g_targetHWND;
+
 #pragma data_seg()
 
 static HMODULE hInstance = nullptr;
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved) {
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
+{
     (void)lpReserved;
+    (void)hModule;
+
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
@@ -33,50 +38,50 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
     return TRUE;
 }
 
-// Get module from address
-HMODULE WINAPI ModuleFromAddress(PVOID pv) {
+
+HMODULE WINAPI ModuleFromAddress(PVOID pv)
+{
     MEMORY_BASIC_INFORMATION mbi;
     if (::VirtualQuery(pv, &mbi, sizeof(mbi)) != 0) {
         return (HMODULE)mbi.AllocationBase;
     }
-    else {
-        return nullptr;
-    }
+    else return nullptr;
 }
+
 
 LRESULT CALLBACK MultiHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
     if (nCode < 0 || nCode == HC_NOREMOVE) {
-        return CallNextHookEx(g_hHook, nCode, wParam, lParam);
+        return ::CallNextHookEx(g_hHook, nCode, wParam, lParam);
     }
+
     if(g_targets->size() == 0) {
         PostMessage(g_hWnd, WM_KEYSTROKE, wParam, lParam);
     }
-    else
-    {
+
+    else {
         for(auto t : *g_targets) {
-//            qDebug() << "t" << (HWND)t
-//                     << "GetForegroundWindow()" << GetForegroundWindow()
-//                     << "equal" << ((HWND)t == GetForegroundWindow());
-            if((HWND)t == GetForegroundWindow())
-            {
+            if((HWND)t == ::GetForegroundWindow()) {
                 PostMessage(g_hWnd, WM_KEYSTROKE, wParam, lParam);
             }
         }
     }
-    return CallNextHookEx(g_hHook, nCode, wParam, lParam);
+    return ::CallNextHookEx(g_hHook, nCode, wParam, lParam);
 }
+
 
 void InstallMultiHook(HWND hwndCaller)
 {
     g_hWnd = hwndCaller;
-    g_hHook = SetWindowsHookEx(WH_MOUSE, MultiHookProc, ModuleFromAddress((HOOKPROC*)MultiHookProc), 0);
+    g_hHook = ::SetWindowsHookEx(WH_MOUSE, MultiHookProc, ModuleFromAddress((HOOKPROC*)MultiHookProc), 0);
 }
+
 
 void UninstallMultiHook()
 {
-    UnhookWindowsHookEx(g_hHook);
+    ::UnhookWindowsHookEx(g_hHook);
 }
+
 
 void UpdateWindowsList(std::vector<HWND>* vector)
 {
@@ -85,3 +90,20 @@ void UpdateWindowsList(std::vector<HWND>* vector)
         g_targets->push_back(k);
     }
 }
+
+
+//LRESULT CALLBACK MultiHookProc2(int nCode, WPARAM wParam, LPARAM lParam)
+//{
+//    if (nCode < 0 || nCode == HC_NOREMOVE) {
+//        return ::CallNextHookEx(NULL, nCode, wParam, lParam);
+//    }
+
+//    PostMessage(g_targetHWND, WM_KEYSTROKE, wParam, lParam);
+//    return ::CallNextHookEx(NULL, nCode, wParam, lParam);
+//}
+
+
+//void setGlobalHwnd(HWND hwnd)
+//{
+//    g_targetHWND = hwnd;
+//}

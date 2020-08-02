@@ -71,12 +71,19 @@ ListView {
                 anchors.fill: parent
                 hoverEnabled: true
 
+//                function getEndPos(){
+//                    var ratio = 1.0 - mainFlick.visibleArea.heightRatio;
+//                    var endPos = mainFlick.contentHeight * ratio;
+//                    return endPos;
+//                }
+
                 onEntered:
                 {
                     wrapper.state = "selected"
                     thumbnailRect.show = true
                     //BackEnd.hover(index)
                     thumbnail.source = "image://previewprovider/" + index;
+                    //mainFlick.contentY = getEndPos();
                 }
                 onExited:
                 {
