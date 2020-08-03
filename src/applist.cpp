@@ -187,7 +187,7 @@ BOOL getWindowInfo(HWND hwnd, QString &exeName, bool &is64)
     if(!hproc) {
         exeName = QString("");
         is64 = true;
-        throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] Unable to read process.");
+        throw std::exception("[ TASK FAILED SUCCESSFULLY ] Unable to read process.");
         return FALSE;
     }
 
@@ -198,7 +198,7 @@ BOOL getWindowInfo(HWND hwnd, QString &exeName, bool &is64)
     BOOL isWow64;
     ret = IsWow64Process(hproc, &isWow64);
     if(!ret) {
-        throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] Could not get determie process bitness");
+        throw std::exception("[ TASK FAILED SUCCESSFULLY ] Could not get determie process bitness");
         return FALSE;
     }
     is64 = !isWow64;

@@ -73,13 +73,15 @@ void setGlobalHwnd(HWND hwnd)
 
 void InstallGlobalHook(HWND hwndCaller) {
     g_callerHWND = hwndCaller;
+    // It actually puts hook on itself, but it works for global events for some reason,
+    // probably need to install LL hook instead
     g_hook = ::SetWindowsHookEx(WH_MOUSE, MultiHookProc, ModuleFromAddress((HOOKPROC*)MultiHookProc), 0);
 }
 
 
 void UninstallGlobalHook() {
     BOOL ret = ::UnhookWindowsHookEx(g_hook);
-    if(!ret) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] Could not remove the hook.");
+    if(!ret) throw std::exception("[ TASK FAILED SUCCESSFULLY ] Could not remove the hook.");
 }
 
 void report() {
