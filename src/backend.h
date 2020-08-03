@@ -296,7 +296,7 @@ private:
     CaptureWorker* m_capture = nullptr;
     QThread m_thread;
     std::vector<HWND>* m_windowHandles;
-    bool m_hooksActive = false;
+    bool m_hooks = false;
     QTimer m_activitytimer;
     QTimer m_activitytimer_small;
     bool m_checkactivity = false;

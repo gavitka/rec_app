@@ -25,6 +25,7 @@
 #include "capturethread.h"
 #include "hooks_dll/mousehook.h"
 #include "blwindow.h"
+#include "hooks.h"
 
 #define HOOKS
 //#undef HOOKS
@@ -37,6 +38,8 @@ using namespace WinToastLib;
 BackEnd* BackEnd::m_instance = nullptr;
 
 extern BLWindow* wnd;
+
+extern HWND g_hwnd;
 
 class CustomHandler : public WinToastLib::IWinToastHandler {
 public:
@@ -168,7 +171,7 @@ BackEnd::BackEnd(QObject *parent) :
 
 BackEnd::~BackEnd()
 {
-    UninstallHook();
+    this->UninstallHook();
     delete m_screen;
 }
 
@@ -699,12 +702,34 @@ void BackEnd::InstallHook()
     // If stop debugger whilst hooks are installed debugger hangs T_T
     if(!wnd) return;
 #ifdef HOOKS
-    if(!m_hooksActive) {
-        qDebug() << "installing hooks";
-        InstallMultiHook((HWND)wnd->winId());
+    qDebug() << "installing hooks";
+    if(!m_hooks) {
+        if(m_appList->isSelected()) {
+            for(int i = 0; i< m_appList->size(); ++i) {
+                auto &w = m_appList->at(i);
+                if (w.selected) {
+                    try {
+                        ::InstallHook(w.hwnd);
+                    }
+                    catch (std::exception e) {
+                        qDebug() << "e.what()" << e.what();
+                    }
+                }
+            }
+        } else {
+            try {
+                // We installing hook in this case the other way,
+                // Not sure why but it only works that way T_T
+                ::InstallGlobalHook(g_hwnd);
+            }
+            catch (std::exception e) {
+                qDebug() << "e.what()" << e.what(); // TODO: fix this shit
+            }
+        }
+        m_hooks = true;
+        // m_appList->InstallHooks();
         // TODO: connect window object
-        updateVectorSlot();
-        m_hooksActive = true;
+        //updateVectorSlot();
     }
 #endif
 }
@@ -712,10 +737,15 @@ void BackEnd::InstallHook()
 void BackEnd::UninstallHook()
 {
 #ifdef HOOKS
-    if(m_hooksActive) {
+    if(m_hooks) {
         qDebug() << "uninstalling hooks";
-        UninstallMultiHook();
-        m_hooksActive = false;
+        ::UninstallHooks();
+        try {
+            ::UninstallGlobalHook();
+        } catch(std::exception e) {
+            qDebug() << e.what();
+        }
+        m_hooks = false;
     }
 #endif
 }
@@ -723,9 +753,9 @@ void BackEnd::UninstallHook()
 void BackEnd::updateVectorSlot()
 {
     // Ask applist to create window handles
-    m_appList->updateVector(m_windowHandles);
+    // m_appList->updateVector(m_windowHandles);
     // Update Windows List in dll
-    UpdateWindowsList(m_windowHandles);
+    // UpdateWindowsList(m_windowHandles);
 }
 
 void BackEnd::selectedChangedSlot()
@@ -746,7 +776,7 @@ void BackEnd::initCheckActivity()
 
 void BackEnd::startCheckActivity()
 {
-    InstallHook();
+    this->InstallHook();
     m_activitytimer_small.setInterval(TIMEOUT2 * 1000);
     m_activitytimer_small.setSingleShot(true);
     m_activitytimer_small.start();
@@ -755,7 +785,7 @@ void BackEnd::startCheckActivity()
 
 void BackEnd::stopCheckAvtivity()
 {
-    UninstallHook();
+    this->UninstallHook();
     m_checkactivity = false;
 }
 
@@ -764,7 +794,7 @@ void BackEnd::clearCheckActivity()
     m_activitytimer.stop();
     m_activitytimer_small.stop();
     stopCheckAvtivity();
-    UninstallHook();
+    this->UninstallHook();
 }
 
 

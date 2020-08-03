@@ -1,7 +1,15 @@
 #include "pch.h"
 #include "hooks_dll/mousehook.h"
 
-void InstallHook(HWND hwnd);
+typedef struct _HOOKDADA {
+    HMODULE hdll;
+    HHOOK hhook;
+} HOOKDATA;
 
-void UninstallHook(HWND hwnd);
+HHOOK InstallHook(HWND hwnd);
 
+//HHOOK InstallGlobalHook();
+
+//void UninstallHook(HHOOK hook);
+
+void UninstallHooks();

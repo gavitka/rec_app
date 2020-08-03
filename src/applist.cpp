@@ -4,7 +4,6 @@
 #include "psapi.h"
 #include "hooks.h"
 
-
 BOOL CALLBACK getWindowsListCallback2(HWND hwnd, LPARAM lParam)
 {
     auto add_list = reinterpret_cast<QVector<HWND>*>(lParam);
@@ -38,16 +37,16 @@ void AppList::select(int i)
 }
 
 // updates vector of selected items upon request
-void AppList::updateVector(std::vector<HWND> *vector)
-{
-    if(vector == nullptr) return;
-    vector->clear();
-    for(int i = 0; i < m_data.size(); ++i)
-        if(m_data[i].selected) {
-            HWND hwnd = m_data[i].hwnd;
-            vector->push_back(hwnd);
-        }
-}
+//void AppList::updateVector(std::vector<HWND> *vector)
+//{
+//    if(vector == nullptr) return;
+//    vector->clear();
+//    for(int i = 0; i < m_data.size(); ++i)
+//        if(m_data[i].selected) {
+//            HWND hwnd = m_data[i].hwnd;
+//            vector->push_back(hwnd);
+//        }
+//}
 
 bool AppList::isSelected()
 {
@@ -56,16 +55,6 @@ bool AppList::isSelected()
     }
     return false;
 }
-
-//void AppList::installHooks()
-//{
-//    for(auto w : m_data) {
-//        if(w.hook == false) {
-//            InstallHook(w.hwnd);
-//            w.hook = true;
-//        }
-//    }
-//}
 
 int AppList::windowsExists(HWND hwnd)
 {
@@ -87,17 +76,29 @@ void AppList::addWindows(QVector<HWND>* add_list)
 {
     QString title;
     QString exename;
+    bool is64;
 
     // Removing empty windows
     QMutableVectorIterator<HWND> it(*add_list);
     while(it.hasNext()) {
         HWND hwnd = it.next();
         title = GetWindowTitle(hwnd);
+
         if (!IsWindowVisible(hwnd)
-                || title.length() == 0
-                || title == L"Program Manager"
-                || title == "Time lapse recording app") {
+            || title.length() == 0
+            || title == L"Program Manager"
+            || title == "Time lapse rec"
+            || title == "Time lapse recording app") { // TODO: investigate, why 2 windows
             it.remove();
+        } else {
+            try {
+                getWindowInfo(hwnd, exename, is64);
+                if(exename == "time_lapse_rec.exe" || !is64) it.remove();
+            }
+            catch(std::exception e) {
+                qDebug() << "e.what()" << e.what();
+                it.remove();
+            }
         }
     } // dat syntax though
 
@@ -118,7 +119,7 @@ void AppList::addWindows(QVector<HWND>* add_list)
     for(auto hwnd : *add_list) {
 
         title = GetWindowTitle(hwnd);
-        exename = getWindowExeName(hwnd);
+        getWindowInfo(hwnd, exename, is64);
         QVector<QString> words;
 
         int index = windowsExists(hwnd);
@@ -127,6 +128,7 @@ void AppList::addWindows(QVector<HWND>* add_list)
             App& app = m_data[index];
             app.name = title;
             app.exename = exename;
+            app.is64 = is64;
             continue;
         }
 
@@ -136,6 +138,7 @@ void AppList::addWindows(QVector<HWND>* add_list)
         app.hwnd = hwnd;
         app.exename = exename;
         app.selected = false; // TODO: save/load
+        app.is64 = is64;
 
         m_data.append(std::move(app));
     }
@@ -173,4 +176,31 @@ QString getWindowExeName(HWND hwnd)
 
     ::GetModuleFileNameEx(Handle, 0, fileName, MAX_PATH);
     return QFileInfo (QString::fromWCharArray(fileName)).fileName();
+}
+
+BOOL getWindowInfo(HWND hwnd, QString &exeName, bool &is64)
+{
+    WCHAR fileName[MAX_PATH];
+    DWORD dwPID;
+    ::GetWindowThreadProcessId(hwnd, &dwPID);
+    HANDLE hproc = ::OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, dwPID);
+    if(!hproc) {
+        exeName = QString("");
+        is64 = true;
+        throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] Unable to read process.");
+        return FALSE;
+    }
+
+    ::GetModuleFileNameEx(hproc, 0, fileName, MAX_PATH);
+    exeName = QFileInfo(QString::fromWCharArray(fileName)).fileName();
+
+    BOOL ret;
+    BOOL isWow64;
+    ret = IsWow64Process(hproc, &isWow64);
+    if(!ret) {
+        throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] Could not get determie process bitness");
+        return FALSE;
+    }
+    is64 = !isWow64;
+    return TRUE;
 }

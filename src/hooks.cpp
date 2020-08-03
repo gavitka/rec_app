@@ -1,60 +1,92 @@
 #include "hooks.h"
+#include <QFile>
 
-typedef int (__stdcall *f_funci)(HWND hwnd);
-
-std::vector<std::pair<HWND, HHOOK>> g_hookList;
+typedef void (__stdcall *f_funci)(HWND hwnd);
 
 extern HWND g_hwnd;
 
+std::vector<HOOKDATA> g_hooks = std::vector<HOOKDATA>();
 
-void InstallHook(HWND hwnd)
+
+HHOOK InstallHook(HWND hwnd)
 {
-    return;
+    BOOL ret;
 
-    // Getting the thread of the window and the PID
     DWORD pid = NULL;
     DWORD tid = GetWindowThreadProcessId(hwnd, &pid);
-    if (tid == NULL) throw std::exception("[ FAILED ] Could not get thread ID of the target window.");
+    if (tid == NULL) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] Could not get thread ID of the target window.");
 
-    // Loading DLL
+    HANDLE hproc = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+    if (hproc == NULL) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] Failed to open process.");
+
+    BOOL isWow64;
+    ret = IsWow64Process(hproc, &isWow64);
+    if(!ret) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] Could not get determie process bitness");
+
+    if(isWow64) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] It's a 32bit process");
+
     HMODULE dll = LoadLibraryEx(L"hooks_dll.dll", NULL, DONT_RESOLVE_DLL_REFERENCES);
-    if (dll == NULL) throw std::exception("[ FAILED ] The DLL could not be found.");
+    if (dll == NULL) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] The DLL could not be found.");
 
-    // Getting exported function address
-    HOOKPROC addr = (HOOKPROC)GetProcAddress(dll, "MultiHookProc2");
-    // TODO: set g_hwnd in this module
-    if (addr == NULL) throw std::exception("[ FAILED ] The function was not found.");
+    HOOKPROC addr = (HOOKPROC)GetProcAddress(dll, "MultiHookProc");
+    if (addr == NULL) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] The function was not found.");
 
     f_funci setGlobalHwnd = (f_funci)GetProcAddress(dll, "setGlobalHwnd");
-    if(!setGlobalHwnd) throw std::exception("[ FAILED ] The function was not found.");
+    if(!setGlobalHwnd) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] The function setGlobalHwnd was not found.");
 
     setGlobalHwnd(g_hwnd);
 
-    // Setting the hook in the hook chain
-    HHOOK handle = SetWindowsHookEx(WH_MOUSE, addr, dll, tid); // Or WH_KEYBOARD if you prefer to trigger the hook manually
-    if (handle == NULL) throw std::exception("[ FAILED ] Couldn't set the hook with SetWindowsHookEx.");
+    HHOOK handle = SetWindowsHookEx(WH_MOUSE, addr, dll, tid);
+    if (handle == NULL) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] Couldn't set the hook with SetWindowsHookEx.");
 
-    g_hookList.push_back(std::pair<HWND, HHOOK>(hwnd, handle));
+    g_hooks.push_back({dll, handle});
+
+    return handle;
 }
 
 
-void UninstallHook(HWND hwnd)
-{
-    return;
-    std::vector<std::pair<HWND, HHOOK>>::iterator it;
-    it = g_hookList.begin();
+//HHOOK InstallGlobalHook()
+//{
+//    HMODULE dll = LoadLibraryEx(L"hooks_dll.dll", NULL, DONT_RESOLVE_DLL_REFERENCES);
+//    if (dll == NULL) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] The DLL could not be found.");
 
-    for(std::vector<std::pair<HWND, HHOOK>>::iterator it = g_hookList.begin(); it != g_hookList.end(); ) {
-        if((*it).first == hwnd) {
-            if(::IsWindow(hwnd)) {
-                BOOL unhook = UnhookWindowsHookEx((*it).second);
-                if (unhook == FALSE) throw std::exception("[ FAILED ] Could not remove the hook.");
-            }
-            g_hookList.erase(it);
-        } else {
-            ++it;
-        }
+//    HOOKPROC addr = (HOOKPROC)GetProcAddress(dll, "MultiHookProc");
+//    if (addr == NULL) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] The function was not found.");
+
+//    f_funci setGlobalHwnd = (f_funci)GetProcAddress(dll, "setGlobalHwnd");
+//    if(!setGlobalHwnd) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] The function setGlobalHwnd was not found.");
+
+//    setGlobalHwnd(g_hwnd);
+
+//    HHOOK handle = SetWindowsHookEx(WH_MOUSE, addr, dll, NULL);
+//    if (handle == NULL) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] Couldn't set the hook with SetWindowsHookEx.");
+
+//    qDebug() << "Installed" << handle << "hook";
+
+//    g_hooks.push_back({dll, handle});
+
+//    return handle;
+//}
+
+
+//void UninstallHook(HHOOK hook)
+//{
+//    BOOL ret = UnhookWindowsHookEx(hook);
+//    if (ret == FALSE) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] Could not remove the hook.");
+//}
+
+
+void UninstallHooks()
+{
+    for(HOOKDATA d : g_hooks) {
+        BOOL ret;
+
+        ret = UnhookWindowsHookEx(d.hhook);
+        if (ret == FALSE) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] Could not remove the hook.");
+
+        ret = FreeLibrary(d.hdll);
+        if (ret == FALSE) throw std::exception("[ THE TASK SUCCESSFULLY FAILED ] Could not unload dll.");
     }
 
-    throw std::exception("[ FAILED ] Hook not found");
+    g_hooks.clear();
 }

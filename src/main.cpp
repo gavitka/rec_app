@@ -9,6 +9,7 @@
 #include "kheventfilter.h"
 #include "applistmodel.h"
 #include "blwindow.h"
+#include "lib.h"
 
 BLWindow* wnd = nullptr;
 
@@ -22,6 +23,7 @@ int main(int argc, char *argv[])
     } else {
         return 0;
     }
+    qDebug().setAutoInsertSpaces(true);
 
     QCoreApplication::setOrganizationName("Gavitka software");
     QCoreApplication::setOrganizationDomain("gavitka.com");
@@ -29,6 +31,10 @@ int main(int argc, char *argv[])
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
     QGuiApplication app(argc, argv);
+
+#ifdef MESSAGE_HANDLER
+    qInstallMessageHandler(myMessageHandler);
+#endif
 
     QQmlApplicationEngine engine;
 

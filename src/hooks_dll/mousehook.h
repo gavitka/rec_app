@@ -2,6 +2,8 @@
 #include <Windows.h>
 #include <vector>
 
+#include <QString>
+
 #ifdef MOUSEHOOK_EXPORTS
 #define MOUSEHOOK_API __declspec(dllexport)
 #else
@@ -17,10 +19,12 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 
 extern "C" MOUSEHOOK_API LRESULT CALLBACK MultiHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
-MOUSEHOOK_API void InstallMultiHook(HWND hwndCaller);
+extern "C" MOUSEHOOK_API void setGlobalHwnd(HWND hwnd);
 
-MOUSEHOOK_API void UninstallMultiHook();
+MOUSEHOOK_API void InstallGlobalHook(HWND hwndCaller);
 
-MOUSEHOOK_API void UpdateWindowsList(std::vector<HWND>* vector);
+MOUSEHOOK_API void UninstallGlobalHook();
 
-//extern "C" MOUSEHOOK_API LRESULT CALLBACK MultiHookProc2(int nCode, WPARAM wParam, LPARAM lParam);
+void report();
+
+HMODULE WINAPI ModuleFromAddress(PVOID pv);

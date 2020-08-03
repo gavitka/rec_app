@@ -7,7 +7,8 @@ struct App {
     QString exename;
     HWND hwnd;
     bool selected = false;
-    bool hook;
+    HHOOK hook = NULL;
+    bool is64 = false;
 };
 
 BOOL CALLBACK getWindowsListCallback2(HWND hwnd, LPARAM lParam);
@@ -26,21 +27,23 @@ public:
     void addWindows(QVector<HWND>* add_list);
     void updateVector(std::vector<HWND>* vector);
     bool isSelected();
-//    void installHooks();
-
-private:
-
-    int AppList::windowsExists(HWND hwnd);
-
-    QVector<App> m_data;
 
 signals:
 
     void listUpdated();
     void vectorChanged();
     void selectedChanged();
+
+private:
+
+    int AppList::windowsExists(HWND hwnd);
+
+    QVector<App> m_data;
+    bool m_hooks = true;
+
 };
 
 QString GetWindowTitle(HWND whnd);
 QString getWindowExeName(HWND hwnd);
+BOOL getWindowInfo(HWND hwnd, QString &exeName, bool &is64);
 

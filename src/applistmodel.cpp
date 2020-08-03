@@ -29,7 +29,9 @@ QVariant AppListModel::data(const QModelIndex &index, int role) const
     case SelectedRole:
         return m_applist->at(index.row()).selected;
     case FileName:
-        return m_applist->at(index.row()).exename;
+        return QString("[") +
+                (m_applist->at(index.row()).is64 ? "x64" : "x32") +
+                "] " + m_applist->at(index.row()).exename;
     }
     return false;
 }

@@ -11,6 +11,7 @@ videos of digital artwork. For Windows only.
 
 ## TODO:
 
+- [ ] Support x86 processes
 - [ ] Recording status window
 - [ ] Not recordnig alert
 - [ ] Textarea don't lose focus
@@ -19,6 +20,7 @@ videos of digital artwork. For Windows only.
 - [ ] Get rid of pesky QML binding loops
 - [ ] Implement frameless window
 - [ ] Add more window information
+- [ ] To think about this: https://stackoverflow.com/questions/33440966/setwindowshookex-is-injecting-32-bit-dll-into-64-bit-process-and-vice-versa
 - [x] Refactor usage of QThread
 
 ## Screenshot

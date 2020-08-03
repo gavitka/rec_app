@@ -16,8 +16,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-ADD_DEFINITIONS(-DUNICODE)
-ADD_DEFINITIONS(-D_UNICODE)
+add_definitions(-DUNICODE -D_UNICODE)
+add_definitions(-DMESSAGE_HANDLER)
 
 find_package(Qt5 COMPONENTS
     Widgets
@@ -98,6 +98,8 @@ add_library(${PROJECT_DLL} SHARED
     src/hooks_dll/dllmain.cpp
     src/hooks_dll/mousehook.cpp
     src/hooks_dll/mousehook.h
+    src/lib.h
+    src/lib.cpp
     )
 
 target_compile_definitions(${PROJECT_DLL} PUBLIC MOUSEHOOK_EXPORTS)
