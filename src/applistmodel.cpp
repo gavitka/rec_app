@@ -1,5 +1,4 @@
 #include "applistmodel.h"
-#include "hooks_dll/mousehook.h"
 #include "backend.h"
 
 AppListModel::AppListModel()
@@ -16,39 +15,39 @@ QHash<int, QByteArray> AppListModel::roleNames() const
 
 int AppListModel::rowCount(const QModelIndex &parent) const
 {
-    if(!m_applist) return 0;
-    return m_applist->size();
+    if(!m_appmanager) return 0;
+    return m_appmanager->size();
 }
 
 QVariant AppListModel::data(const QModelIndex &index, int role) const
 {
-    if(!m_applist && m_applist->size() == 0) return "";
+    if(!m_appmanager && m_appmanager->size() == 0) return "";
     switch(role) {
     case TextRole:
-        return m_applist->at(index.row()).name;
+        return m_appmanager->at(index.row()).name;
     case SelectedRole:
-        return m_applist->at(index.row()).selected;
+        return m_appmanager->at(index.row()).selected;
     case FileName:
         return QString("[") +
-                (m_applist->at(index.row()).is64 ? "x64" : "x32") +
-                "] " + m_applist->at(index.row()).exename;
+                (m_appmanager->at(index.row()).is64 ? "x64" : "x32") +
+                "] " + m_appmanager->at(index.row()).exename;
     }
     return false;
 }
 
-void AppListModel::setAppList(AppList* value)
+void AppListModel::setAppManager(AppManager* value)
 {
-    m_applist = value;
-    connect(m_applist, &AppList::listUpdated, this, &AppListModel::dataChangedSlot);
+    m_appmanager = value;
+    connect(m_appmanager, &AppManager::listChanged, this, &AppListModel::dataChangedSlot);
     dataChangedSlot();
 }
 
 void AppListModel::select(int i)
 {
-    m_applist->select(i);
+    m_appmanager->select(i);
 
     QModelIndex topLeft = createIndex(0, 0);
-    QModelIndex bottomRight = createIndex(m_applist->size()-1, 0);
+    QModelIndex bottomRight = createIndex(m_appmanager->size()-1, 0);
     QVector<int> roleVector({SelectedRole});
     emit dataChanged(topLeft, bottomRight, roleVector);
 }
@@ -56,13 +55,8 @@ void AppListModel::select(int i)
 void AppListModel::dataChangedSlot()
 {
     QModelIndex topLeft = QAbstractItemModel::createIndex(0, 0);
-    QModelIndex bottomRight = QAbstractItemModel::createIndex(m_applist->size()-1, 0);
+    QModelIndex bottomRight = QAbstractItemModel::createIndex(m_appmanager->size()-1, 0);
     emit dataChanged(topLeft, bottomRight, QVector<int>());
     beginResetModel();
     endResetModel();
-}
-
-void AppListModel::refresh()
-{
-    m_applist->update();
 }

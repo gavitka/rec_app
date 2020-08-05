@@ -107,13 +107,13 @@ bool BLWindow::nativeEvent(const QByteArray &eventType, void *message, long *res
             }
             break;
 
-    //        auto action = QApplication::widgetAt(QCursor::pos());
-    //        if (action == title_bar_widget_) {
-    //            *result = HTCAPTION;
-    //            return true;
-    //        }
-    //        break;
-        }
+            //        auto action = QApplication::widgetAt(QCursor::pos());
+            //        if (action == title_bar_widget_) {
+            //            *result = HTCAPTION;
+            //            return true;
+            //        }
+            //        break;
+                }
 
     case WM_GETMINMAXINFO: {
             MINMAXINFO* mmi = reinterpret_cast<MINMAXINFO*>(msg->lParam);

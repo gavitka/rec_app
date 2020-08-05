@@ -27,22 +27,6 @@ BLWindow {
         property alias height: wnd.height
     }
 
-//    onClosing: {
-//        if(BackEnd.isRecording == true){
-//            console.log("deny closing");
-//            close.accepted = false;
-//            BackEnd.close();
-//        }
-//    }
-
-//    Connections {
-//        target: BackEnd
-//        function onCloseReady() {
-//            console.log("ready closing");
-//            wnd.close();
-//        }
-//    }
-
     ColumnLayout {
         anchors.fill: parent
         Rectangle {
@@ -314,76 +298,6 @@ BLWindow {
                         Layout.topMargin: 10
                         Layout.bottomMargin: 5
                     }
-                    Label {
-                        Layout.fillWidth: true
-                        text: "Source"
-                        font.pointSize: 14
-                    }
-                    Label {
-                        Layout.fillWidth: true
-                        text: "Select window to record window, screen to record whole screen area."
-                        font.pointSize: 10
-                        wrapMode: Text.WordWrap
-                    }
-                    GridLayout{
-                        Layout.fillWidth: true
-                        columns: 2
-                        RadioButton {
-                            width: 20
-                            checked: BackEnd.recMode ? false : true
-                            enabled: BackEnd.lockParam
-                            onCheckedChanged: checked ? BackEnd.recMode = false : BackEnd.recMode = true
-                        }
-                        Label{
-                            Layout.fillWidth: true
-                            text: "Screen"
-                            font.pointSize: 14
-                        }
-                        RadioButton {
-                            width: 20
-                            checked: BackEnd.recMode ? true : false
-                            enabled: BackEnd.lockParam
-                            onCheckedChanged: checked ? BackEnd.recMode = true : BackEnd.recMode = false
-                        }
-                        Label{
-                            Layout.fillWidth: true
-                            text: "Window"
-                            font.pointSize: 14
-                        }
-                    } // GridLayout
-//                    Label {
-//                        Layout.fillWidth: true
-//                        text: "Window"
-//                        font.pointSize: 14
-//                        visible: BackEnd.recMode
-
-//                    }
-//                    Label {
-//                        Layout.fillWidth: true
-//                        text: "Select window to record."
-//                        font.pointSize: 10
-//                        wrapMode: Text.WordWrap
-//                        visible: BackEnd.recMode
-//                    }
-//                    ComboBox{
-//                        visible: BackEnd.recMode
-//                        id:windowList
-//                        Layout.fillWidth: true
-//                        model:BackEnd.windowList
-//                        textRole: "name"
-//                        enabled: BackEnd.lockParam
-//                        Binding { target: BackEnd
-//                            property: "windowIndex"
-//                            value: windowList.currentIndex
-//                        }
-//                        Binding { target: windowList
-//                            property: "currentIndex"
-//                            value: BackEnd.windowIndex
-//                        }
-//                        onPressedChanged: {
-//                            BackEnd.getWindowsList()
-//                        }
-//                    } //
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 42
@@ -395,9 +309,28 @@ BLWindow {
                             font.weight: Font.DemiBold
                         }
                         RefreshButton {
-                            onClicked: appListView.model.refresh()
+                            onClicked: BackEnd.appManager.refresh()
                         }
                     } // RowLayout
+//                    RowLayout {
+//                        Layout.fillWidth: true
+//                        Label{
+//                            Layout.fillWidth: true
+//                            font.pointSize: 14
+//                            text: "Debugging rect"
+//                        }
+//                        Rectangle {
+//                            Layout.margins: 20
+//                            Layout.preferredWidth: 50
+//                            Layout.preferredHeight: 20
+//                            color:BackEnd.color
+//                        }
+//                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: BackEnd.recMode ? "Recording source: window" : "Recording source: entire screen"
+                        font.pointSize: 14
+                    }
                     Label {
                         Layout.fillWidth: true
                         text: "Select windows for recording. If window recording mode is active " +

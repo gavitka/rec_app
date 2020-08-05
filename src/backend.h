@@ -20,15 +20,10 @@
 #include <QThread>
 
 #include "applistmodel.h"
-#include "CaptureThread.h"
-#include "../lib/wintoastlib.h"
+#include "captureworker.h"
+#include "lib/wintoastlib.h"
 
 class CaptureWorker;
-
-enum RECORD_MODE {
-    Screen,
-    Window
-};
 
 enum FRAMERATES{
     x1 = 0, x2, x4, x8, x16
@@ -49,6 +44,8 @@ enum BITRATES{
 
 class ListElement;
 
+////////////////////////////////////////////////////////////////////////////////////
+
 class BackEnd : public QObject
 {
     Q_OBJECT
@@ -60,7 +57,7 @@ class BackEnd : public QObject
     Q_PROPERTY(QString recordingTime READ recordingTime NOTIFY timeChanged)
     Q_PROPERTY(bool isSleeping READ isSleeping NOTIFY sleepingChanged)
 
-    Q_PROPERTY(bool recMode READ recMode WRITE setRecMode NOTIFY recModeChanged)
+    Q_PROPERTY(bool recMode READ recMode NOTIFY recModeChanged)
 
     Q_PROPERTY(QString filePrefix READ filePrefix WRITE setFilePrefix NOTIFY filePrefixChanged)
     Q_PROPERTY(QString filePath READ filePath WRITE setFilePathUrl NOTIFY filePathChanged)
@@ -83,10 +80,8 @@ class BackEnd : public QObject
     Q_PROPERTY(QList<QObject*> frameRateList READ frameRateList NOTIFY frameRateListChanged)
     Q_PROPERTY(int frameRateIndex READ frameRateIndex WRITE setFrameRateIndex NOTIFY frameRateIndexChanged)
 
-    Q_PROPERTY(AppList* appList READ appList NOTIFY appListChanged)
-
-    Q_PROPERTY(int mouseX READ mouseX WRITE setMouseX NOTIFY mousePosChanged)
-    Q_PROPERTY(int mouseY READ mouseY WRITE setMouseX NOTIFY mousePosChanged)
+    Q_PROPERTY(AppManager* appManager READ appManager NOTIFY appManagerChanged)
+    Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged)
 
     enum States {
         IdleState = 0,
@@ -117,10 +112,6 @@ public:
     int recordStatus();
 
     bool recMode();
-    void setRecMode(bool value);
-
-    int recordMode();
-    void setRecordMode(int value);
 
     QString filePrefix();
     void setFilePrefix(QString value);
@@ -163,20 +154,17 @@ public:
 
     bool isRecording();
 
-    int mouseX();
-    void setMouseX(int value);
-
-    int mouseY();
-    void setMouseY(int value);
-
     bool isSleeping();
 
     bool notifyMode();
     void setNotifyMode(bool value);
 
-    // ----------------- </PROP>  -----------------
+    QColor color();
+    void setColor(QColor value);
 
-    AppList* appList();
+    AppManager *appManager();
+
+    // ----------------- </PROP>  -----------------
 
     QSettings *getSettings();
     qint64 getElapsedTime();
@@ -194,17 +182,10 @@ public:
     void refreshImage();
     void kick();
 
-//    std::vector<HWND> *windowVector();
-//    void ChangeState(State i);
-
-    void initCheckActivity(); // init timer
-    void clearCheckActivity(); // before recording
-
 signals:
 
     void statusChanged();
     void timeChanged();
-    void mousePosChanged();
     void recModeChanged();
     void filePrefixChanged();
     void recordingTimeChanged();
@@ -227,47 +208,35 @@ signals:
     void recordStatusChanged();
     void stopSignal();
     void startSignal();
-    void appListChanged();
     void sleepingChanged();
+    void appManagerChanged();
+    void colorChanged();
 
 public slots:
 
     void statusChangedSlot();
-
     void startRecording();
     void pauseRecording();
     void stopRecording();
-
     void handleResults();
-
     void refreshUI();
     void timerUpdateSlot();
-    QScreen* getScreen(){return m_screen;}
     void sleepingChangedSlot();
     void close();
-
-//    void InstallHook();
-//    void UninstallHook();
-    void updateVectorSlot();
     void selectedChangedSlot();
-
-    void startCheckActivity(); // set up hooks, singleshot
-    void stopCheckAvtivity(); // remove hooks
-
-    //void CheckActivity();
+    void colorChange();
+    void checkActivity();
 
 private:
 
     static BackEnd* m_instance;
     int m_width;
     int m_height;
-    int m_mousex;
-    int m_mousey;
 
     int m_playFPS = 24;
     int m_recordFPS = 3;
     bool m_lockParam;
-    int m_recMode = RECORD_MODE::Screen;
+    //int m_recMode = RECORD_MODE::Screen;
     int m_bitRate;
 
     QSettings m_settings;
@@ -291,20 +260,23 @@ private:
 
     bool m_sleepingflag = false;
     bool m_windowCloseFlag = false;
-    AppList* m_appList = nullptr;
 
     CaptureWorker* m_capture = nullptr;
     QThread m_thread;
-    //std::vector<HWND>* m_windowHandles;
-    QTimer m_activitytimer;
-    QTimer m_activitytimer_small;
-    bool m_checkactivity = false;
 
     WinToastLib::WinToastTemplate m_templ;
 
     States m_currentstate;
+    AppManager *m_appmanager;
+
+    QColor m_color;
+    QTimer m_colortimer;
+
+    QTimer m_activitytimer;
+    bool m_activity = false;
 };
 
+////////////////////////////////////////////////////////////////////////////////////
 
 class ThumbProvider : public QQuickImageProvider
 {
@@ -315,6 +287,7 @@ public:
     QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize);
 };
 
+////////////////////////////////////////////////////////////////////////////////////
 
 class ListElement : public QObject
 {

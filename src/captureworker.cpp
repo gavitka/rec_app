@@ -1,4 +1,4 @@
-#include "capturethread.h"
+#include "captureworker.h"
 
 #include <QGuiApplication>
 #include <QPixmap>
@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "backend.h"
-#include "hooks_dll/mousehook.h"
 #include "windows.h"
 #include "blwindow.h"
 
@@ -61,9 +60,9 @@ void CaptureWorker::kick()
 bool CaptureWorker::CheckWindow()
 {
     HWND t = GetForegroundWindow();
-    if(m_backEnd->appList()->size() > 0) {
-        for(int i = 0; i < m_backEnd->appList()->size(); ++i) {
-            auto &w =  m_backEnd->appList()->at(i);
+    if(m_backEnd->appManager()->size() > 0) {
+        for(int i = 0; i < m_backEnd->appManager()->size(); ++i) {
+            auto &w =  m_backEnd->appManager()->at(i);
             if(w.hwnd == t && w.hwnd!= m_hwnd && w.selected) {
                 m_hwnd = w.hwnd;
                 return true;
@@ -93,7 +92,6 @@ void CaptureWorker::Init()
     m_playFPS =     m_backEnd->playFPS();
     m_width =       m_backEnd->getWidth();
     m_height =      m_backEnd->getHeight();
-    m_recMode =     m_backEnd->recordMode();
     m_bitRate =     m_backEnd->bitRate();
 
     QString _filename = m_backEnd->fileName();
@@ -220,7 +218,7 @@ void CaptureWorker::Finish()
 void CaptureWorker::CaptureFrame()
 {
     QImage image;
-    if(m_recMode == RECORD_MODE::Window) {
+    if(m_backEnd->appManager()->isSelected()) {
         if(!IsWindow(m_hwnd)) return;
         image = CaptureWindow(m_screen, m_hwnd);
     } else {
@@ -493,7 +491,7 @@ void CaptureWorker::setBitRate(int value)
 void CaptureWorker::update()
 {
     CheckWindow();
-    emit updateVector();
+    //emit updateVector();
 }
 
 void CaptureWorker::checkSleeping(bool makeSleeping)
