@@ -11,7 +11,7 @@ ListView {
 
     model: AppListModel {
         id: appListModel
-        appList: BackEnd.appList
+        appManager: BackEnd.appManager
     }
 
     Component {

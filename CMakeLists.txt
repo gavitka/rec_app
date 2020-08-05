@@ -55,24 +55,21 @@ add_executable(${PROJECT_NAME} WIN32
     src/applistmodel.h
     src/backend.cpp
     src/backend.h
-    src/capturethread.cpp
-    src/capturethread.h
+    src/captureworker.cpp
+    src/captureworker.h
     src/kheventfilter.h
     src/performancetimer.cpp
     src/performancetimer.h
-    src/applist.cpp
-    src/applist.h
+    src/appmanager.cpp
+    src/appmanager.h
     src/pch.h
     src/lib.h
     src/lib.cpp
     src/blwindow.h
     src/blwindow.cpp
 
-    lib/wintoastlib.h
-    lib/wintoastlib.cpp
-
-    src/hooks.h
-    src/hooks.cpp
+    src/lib/wintoastlib.h
+    src/lib/wintoastlib.cpp
 
     README.md
     installer/installer.nsi
@@ -80,10 +77,6 @@ add_executable(${PROJECT_NAME} WIN32
     ${SRC_UI}
     ${RESOURCES}
     ${QTRESOURCES}
-    )
-
-target_precompile_headers(${PROJECT_NAME}
-    PUBLIC src/pch.h
     )
 
 source_group("ui" FILES ${SRC_UI})
@@ -95,14 +88,27 @@ set(QML_IMPORT_PATH
 set(PROJECT_DLL "hooks_dll")
 
 add_library(${PROJECT_DLL} SHARED
-    src/hooks_dll/dllmain.cpp
-    src/hooks_dll/mousehook.cpp
-    src/hooks_dll/mousehook.h
-    src/lib.h
-    src/lib.cpp
+    src/hooks_dll/hook.cpp
+    src/hooks_dll/hook.h
     )
 
-target_compile_definitions(${PROJECT_DLL} PUBLIC MOUSEHOOK_EXPORTS)
+target_include_directories(${PROJECT_DLL} PUBLIC
+    "${CMAKE_SOURCE_DIR}/src/"
+    )
+
+target_include_directories(${PROJECT_DLL} PUBLIC
+    "${CMAKE_SOURCE_DIR}/src/"
+    )
+
+target_precompile_headers(${PROJECT_NAME}
+    PUBLIC src/pch.h
+    )
+
+target_precompile_headers(${PROJECT_DLL}
+    PUBLIC src/pch.h
+    )
+
+target_compile_definitions(${PROJECT_DLL} PUBLIC DLLEXPORT)
 
 set(CMAKE_EXE_LINKER_FLAGS
     "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMT")

@@ -5,13 +5,13 @@
 #include <QAbstractListModel>
 #include <QVector>
 
-#include "applist.h"
+#include "appmanager.h"
 
 class AppListModel : public QAbstractListModel
 {
     Q_OBJECT
 
-    Q_PROPERTY(AppList* appList WRITE setAppList)
+    Q_PROPERTY(AppManager* appManager WRITE setAppManager)
 
 public:
 
@@ -25,15 +25,14 @@ public:
     QHash<int, QByteArray> roleNames() const;
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
-    void setAppList(AppList* value);
+    void setAppManager(AppManager* value);
 
 public slots:
 
     void select(int i);
     void dataChangedSlot();
-    void refresh();
 
 private:
 
-    AppList* m_applist = nullptr;
+    AppManager* m_appmanager = nullptr;
 };

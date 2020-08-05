@@ -115,7 +115,6 @@ private:
     bool m_pause = false;
     HWND m_hwnd;
     QScreen* m_screen;
-    int m_recMode;
 
     int m_width;
     int m_height;
