@@ -61,10 +61,11 @@ void CaptureWorker::kick()
 bool CaptureWorker::CheckWindow()
 {
     HWND t = GetForegroundWindow();
-    if(m_backEnd->windowVector()->size() > 0) {
-        for(HWND w : *m_backEnd->windowVector()) {
-            if(w == t && w!= m_hwnd) {
-                m_hwnd = w;
+    if(m_backEnd->appList()->size() > 0) {
+        for(int i = 0; i < m_backEnd->appList()->size(); ++i) {
+            auto &w =  m_backEnd->appList()->at(i);
+            if(w.hwnd == t && w.hwnd!= m_hwnd && w.selected) {
+                m_hwnd = w.hwnd;
                 return true;
             }
         }
@@ -104,8 +105,6 @@ void CaptureWorker::Init()
     m_asp = (qreal)m_width/m_height;
 
     CheckWindow();
-
-    emit InstallHook();
 
     int err;
 
@@ -211,8 +210,6 @@ void CaptureWorker::Finish()
         }
     }
 
-    emit UninstallHook();
-
     Clear();
     Remux();
 
@@ -306,65 +303,70 @@ void CaptureWorker::Remux()
     AVFormatContext *ifmt_ctx = nullptr, *ofmt_ctx = nullptr;
     int err;
 
-    [&](){
-        if ((err = avformat_open_input(&ifmt_ctx, tempfilename(), nullptr, nullptr)) < 0) {
-            throw std::exception("Failed to open input file for remuxing");
-            return;
-        }
-        if ((err = avformat_find_stream_info(ifmt_ctx, nullptr)) < 0) {
-            throw std::exception("Failed to retrieve input stream information");
-            return;
-        }
-        if ((err = avformat_alloc_output_context2(&ofmt_ctx, nullptr, nullptr, filename()))) {
-            throw std::exception("Failed to allocate output context");
-            return;
-        }
-
-        AVStream *inVideoStream = ifmt_ctx->streams[0];
-        AVStream *outVideoStream = avformat_new_stream(ofmt_ctx, nullptr);
-        if (!outVideoStream) {
-            throw std::exception("Failed to allocate output video stream");
-            return;
-        }
-        outVideoStream->time_base = { 1, m_playFPS };
-        avcodec_parameters_copy(outVideoStream->codecpar, inVideoStream->codecpar);
-        outVideoStream->codecpar->codec_tag = 0;
-
-        if (!(ofmt_ctx->oformat->flags & AVFMT_NOFILE)) {
-            if ((err = avio_open(&ofmt_ctx->pb, filename(), AVIO_FLAG_WRITE)) < 0) {
-                throw std::exception("Failed to open output file");
+    try {
+        [&](){
+            if ((err = avformat_open_input(&ifmt_ctx, tempfilename(), nullptr, nullptr)) < 0) {
+                throw std::exception("Failed to open input file for remuxing");
                 return;
             }
-        }
-
-        if ((err = avformat_write_header(ofmt_ctx, nullptr)) < 0) {
-            throw std::exception("Failed to write header to output file");
-            return;
-        }
-
-        AVPacket videoPkt;
-        int64_t ts = 0;
-        while (true) {
-            if ((err = av_read_frame(ifmt_ctx, &videoPkt)) < 0) {
-                break;
+            if ((err = avformat_find_stream_info(ifmt_ctx, nullptr)) < 0) {
+                throw std::exception("Failed to retrieve input stream information");
+                return;
             }
-            videoPkt.stream_index = outVideoStream->index;
-            videoPkt.pts = ts;
-            videoPkt.dts = ts;
-            videoPkt.duration = av_rescale_q(videoPkt.duration, inVideoStream->time_base, outVideoStream->time_base);
-            ts += videoPkt.duration;
-            videoPkt.pos = -1;
+            if ((err = avformat_alloc_output_context2(&ofmt_ctx, nullptr, nullptr, filename()))) {
+                throw std::exception("Failed to allocate output context");
+                return;
+            }
 
-            if ((err = av_interleaved_write_frame(ofmt_ctx, &videoPkt)) < 0) {
-                throw std::exception("Failed to mux packet");
+            AVStream *inVideoStream = ifmt_ctx->streams[0];
+            AVStream *outVideoStream = avformat_new_stream(ofmt_ctx, nullptr);
+            if (!outVideoStream) {
+                throw std::exception("Failed to allocate output video stream");
+                return;
+            }
+            outVideoStream->time_base = { 1, m_playFPS };
+            avcodec_parameters_copy(outVideoStream->codecpar, inVideoStream->codecpar);
+            outVideoStream->codecpar->codec_tag = 0;
+
+            if (!(ofmt_ctx->oformat->flags & AVFMT_NOFILE)) {
+                if ((err = avio_open(&ofmt_ctx->pb, filename(), AVIO_FLAG_WRITE)) < 0) {
+                    throw std::exception("Failed to open output file");
+                    return;
+                }
+            }
+
+            if ((err = avformat_write_header(ofmt_ctx, nullptr)) < 0) {
+                throw std::exception("Failed to write header to output file");
+                return;
+            }
+
+            AVPacket videoPkt;
+            int64_t ts = 0;
+            while (true) {
+                if ((err = av_read_frame(ifmt_ctx, &videoPkt)) < 0) {
+                    break;
+                }
+                videoPkt.stream_index = outVideoStream->index;
+                videoPkt.pts = ts;
+                videoPkt.dts = ts;
+                videoPkt.duration = av_rescale_q(videoPkt.duration, inVideoStream->time_base, outVideoStream->time_base);
+                ts += videoPkt.duration;
+                videoPkt.pos = -1;
+
+                if ((err = av_interleaved_write_frame(ofmt_ctx, &videoPkt)) < 0) {
+                    throw std::exception("Failed to mux packet");
+                    av_packet_unref(&videoPkt);
+                    break;
+                }
                 av_packet_unref(&videoPkt);
-                break;
             }
-            av_packet_unref(&videoPkt);
-        }
 
-        av_write_trailer(ofmt_ctx);
-    }();
+            av_write_trailer(ofmt_ctx);
+        }();
+    } catch (std::exception e)
+    {
+        qDebug() << "e.what()" << e.what();
+    }
 
     if (ifmt_ctx) {
         avformat_close_input(&ifmt_ctx);

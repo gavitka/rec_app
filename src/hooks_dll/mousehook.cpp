@@ -7,7 +7,6 @@
 
 #include <QDebug>
 #include <QString>
-#include <QFile>
 
 #include "../lib.h"
 
@@ -57,8 +56,8 @@ LRESULT CALLBACK MultiHookProc(int nCode, WPARAM wParam, LPARAM lParam)
     if (nCode < 0 || nCode == HC_NOREMOVE) {
         return ::CallNextHookEx(NULL, nCode, wParam, lParam);
     }
-    qDebug() << "MultiHookProc ";
-    report();
+    //qDebug() << "MultiHookProc ";
+    //report();
     if(g_callerHWND != NULL)
         PostMessage(g_callerHWND, WM_KEYSTROKE, wParam, lParam);
     return ::CallNextHookEx(NULL, nCode, wParam, lParam);
@@ -71,18 +70,19 @@ void setGlobalHwnd(HWND hwnd)
 }
 
 
-void InstallGlobalHook(HWND hwndCaller) {
+HHOOK InstallGlobalHookDll(HWND hwndCaller) {
     g_callerHWND = hwndCaller;
     // It actually puts hook on itself, but it works for global events for some reason,
     // probably need to install LL hook instead
     g_hook = ::SetWindowsHookEx(WH_MOUSE, MultiHookProc, ModuleFromAddress((HOOKPROC*)MultiHookProc), 0);
+    return g_hook;
 }
 
 
-void UninstallGlobalHook() {
-    BOOL ret = ::UnhookWindowsHookEx(g_hook);
-    if(!ret) throw std::exception("[ TASK FAILED SUCCESSFULLY ] Could not remove the hook.");
-}
+//void UninstallGlobalHook() {
+//    BOOL ret = ::UnhookWindowsHookEx(g_hook);
+//    if(!ret) throw std::exception("[ TASK FAILED SUCCESSFULLY ] Could not remove the hook.");
+//}
 
 void report() {
     TCHAR szExeFileName[MAX_PATH];

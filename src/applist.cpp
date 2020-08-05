@@ -33,20 +33,9 @@ void AppList::select(int i)
     if(i >=0 && i <m_data.size()) {
         m_data[i].selected = !m_data[i].selected;
     }
+    resetHooks();
     emit selectedChanged();
 }
-
-// updates vector of selected items upon request
-//void AppList::updateVector(std::vector<HWND> *vector)
-//{
-//    if(vector == nullptr) return;
-//    vector->clear();
-//    for(int i = 0; i < m_data.size(); ++i)
-//        if(m_data[i].selected) {
-//            HWND hwnd = m_data[i].hwnd;
-//            vector->push_back(hwnd);
-//        }
-//}
 
 bool AppList::isSelected()
 {
@@ -54,6 +43,49 @@ bool AppList::isSelected()
         if(w.selected == true) return true;
     }
     return false;
+}
+
+void AppList::setHooks()
+{
+    if(m_hooks) {
+        qDebug() << "Hooks already set.";
+        return;
+    }
+
+    if(isSelected()) {
+        for(auto w : m_data) {
+            if (w.selected) {
+                try {
+                    ::InstallHook(w.hwnd);
+                }
+                catch (std::exception e) {
+                    qDebug() << "e.what()" << e.what();
+                }
+            }
+        }
+    } else {
+        ::InstallGlobalHook();
+    }
+
+    m_hooks = true;
+}
+
+void AppList::unsetHooks()
+{
+    if(!m_hooks) {
+        qDebug() << "Hooks not set.";
+        return;
+    }
+
+    qDebug() << "uninstalling hooks";
+    ::UninstallHooks();
+    m_hooks = false;
+}
+
+void AppList::resetHooks()
+{
+    unsetHooks();
+    setHooks();
 }
 
 int AppList::windowsExists(HWND hwnd)
@@ -152,6 +184,7 @@ void AppList::update()
 
     emit listUpdated();
     delete add_list;
+    if(m_hooks) resetHooks();
 }
 
 QString GetWindowTitle(HWND hwnd)

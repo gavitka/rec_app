@@ -6,10 +6,8 @@ typedef struct _HOOKDADA {
     HHOOK hhook;
 } HOOKDATA;
 
-HHOOK InstallHook(HWND hwnd);
+void InstallHook(HWND hwnd);
 
-//HHOOK InstallGlobalHook();
-
-//void UninstallHook(HHOOK hook);
+void InstallGlobalHook();
 
 void UninstallHooks();

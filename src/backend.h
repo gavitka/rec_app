@@ -194,7 +194,7 @@ public:
     void refreshImage();
     void kick();
 
-    std::vector<HWND> *windowVector();
+//    std::vector<HWND> *windowVector();
 //    void ChangeState(State i);
 
     void initCheckActivity(); // init timer
@@ -246,8 +246,8 @@ public slots:
     void sleepingChangedSlot();
     void close();
 
-    void InstallHook();
-    void UninstallHook();
+//    void InstallHook();
+//    void UninstallHook();
     void updateVectorSlot();
     void selectedChangedSlot();
 
@@ -295,8 +295,7 @@ private:
 
     CaptureWorker* m_capture = nullptr;
     QThread m_thread;
-    std::vector<HWND>* m_windowHandles;
-    bool m_hooks = false;
+    //std::vector<HWND>* m_windowHandles;
     QTimer m_activitytimer;
     QTimer m_activitytimer_small;
     bool m_checkactivity = false;

@@ -88,11 +88,11 @@ target_precompile_headers(${PROJECT_NAME}
 
 source_group("ui" FILES ${SRC_UI})
 
-set(PROJECT_DLL "hooks_dll")
-
 set(QML_IMPORT_PATH 
     "${CMAKE_SOURCE_DIR}/src/imports" 
     CACHE STRING "" FORCE)
+
+set(PROJECT_DLL "hooks_dll")
 
 add_library(${PROJECT_DLL} SHARED
     src/hooks_dll/dllmain.cpp
@@ -159,7 +159,7 @@ target_link_libraries(${PROJECT_NAME} ${PROJECT_DLL})
 
 target_link_libraries(${PROJECT_DLL} Qt5::Core)
 
-# set startup project
+# set startup project in Visual Studio
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")

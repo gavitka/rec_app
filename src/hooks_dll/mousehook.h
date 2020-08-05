@@ -21,9 +21,9 @@ extern "C" MOUSEHOOK_API LRESULT CALLBACK MultiHookProc(int nCode, WPARAM wParam
 
 extern "C" MOUSEHOOK_API void setGlobalHwnd(HWND hwnd);
 
-MOUSEHOOK_API void InstallGlobalHook(HWND hwndCaller);
+MOUSEHOOK_API HHOOK InstallGlobalHookDll(HWND hwndCaller);
 
-MOUSEHOOK_API void UninstallGlobalHook();
+//MOUSEHOOK_API void UninstallGlobalHook();
 
 void report();
 

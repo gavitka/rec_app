@@ -10,3 +10,5 @@
 
 *.txt.user
 *.pro.user
+
+/test/

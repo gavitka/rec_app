@@ -30,8 +30,8 @@
 #define HOOKS
 //#undef HOOKS
 
-#define TIMEOUT1 8
-#define TIMEOUT2 1
+#define TIMEOUT1 30
+#define TIMEOUT2 5
 
 using namespace WinToastLib;
 
@@ -78,7 +78,6 @@ public:
 };
 
 
-
 QObject *BackEnd::qmlInstance(QQmlEngine *engine, QJSEngine *scriptEngine) {
     Q_UNUSED(engine)
     Q_UNUSED(scriptEngine)
@@ -98,7 +97,7 @@ BackEnd::BackEnd(QObject *parent) :
     m_recordTimer(),
     m_activitytimer(this)
 {
-    m_windowHandles = new std::vector<HWND>;
+    //m_windowHandles = new std::vector<HWND>;
 
     setFilePath(m_settings.value("filePath").toString());
     setFilePrefix(m_settings.value("filePrefix").toString());
@@ -171,7 +170,7 @@ BackEnd::BackEnd(QObject *parent) :
 
 BackEnd::~BackEnd()
 {
-    this->UninstallHook();
+    m_appList->unsetHooks();
     delete m_screen;
 }
 
@@ -226,8 +225,6 @@ void BackEnd::startRecording()
     connect(m_capture, &CaptureWorker::finished, m_capture, &QObject::deleteLater);
 
     connect(m_capture, &CaptureWorker::updateVector, this, &BackEnd::updateVectorSlot);
-    connect(m_capture, &CaptureWorker::InstallHook, this, &BackEnd::InstallHook);
-    connect(m_capture, &CaptureWorker::UninstallHook, this, &BackEnd::UninstallHook);
 
     m_capture->setCrop((m_cropIndex == CROP_MODE::Crop) ? true : false);
     m_capture->setBitRate(m_bitRate);
@@ -240,6 +237,7 @@ void BackEnd::startRecording()
     m_timer = new QTimer(this);
     connect(m_timer, &QTimer::timeout, this, &BackEnd::timerUpdateSlot);
     m_timer->start(1000);
+    m_appList->setHooks();
 
     emit startSignal();
 }
@@ -267,6 +265,8 @@ void BackEnd::stopRecording()
         m_timer->stop();
         delete m_timer;
         emit stopSignal();
+
+        m_appList->unsetHooks();
     }
 }
 
@@ -697,59 +697,6 @@ void BackEnd::close() {
     }
 }
 
-void BackEnd::InstallHook()
-{
-    // If stop debugger whilst hooks are installed debugger hangs T_T
-    if(!wnd) return;
-#ifdef HOOKS
-    qDebug() << "installing hooks";
-    if(!m_hooks) {
-        if(m_appList->isSelected()) {
-            for(int i = 0; i< m_appList->size(); ++i) {
-                auto &w = m_appList->at(i);
-                if (w.selected) {
-                    try {
-                        ::InstallHook(w.hwnd);
-                    }
-                    catch (std::exception e) {
-                        qDebug() << "e.what()" << e.what();
-                    }
-                }
-            }
-        } else {
-            try {
-                // We installing hook in this case the other way,
-                // Not sure why but it only works that way T_T
-                ::InstallGlobalHook(g_hwnd);
-            }
-            catch (std::exception e) {
-                qDebug() << "e.what()" << e.what(); // TODO: fix this shit
-            }
-        }
-        m_hooks = true;
-        // m_appList->InstallHooks();
-        // TODO: connect window object
-        //updateVectorSlot();
-    }
-#endif
-}
-
-void BackEnd::UninstallHook()
-{
-#ifdef HOOKS
-    if(m_hooks) {
-        qDebug() << "uninstalling hooks";
-        ::UninstallHooks();
-        try {
-            ::UninstallGlobalHook();
-        } catch(std::exception e) {
-            qDebug() << e.what();
-        }
-        m_hooks = false;
-    }
-#endif
-}
-
 void BackEnd::updateVectorSlot()
 {
     // Ask applist to create window handles
@@ -763,38 +710,35 @@ void BackEnd::selectedChangedSlot()
     emit recordReadyChanged();
 }
 
-std::vector<HWND>* BackEnd::windowVector() {
-    return m_windowHandles;
-}
 
 void BackEnd::initCheckActivity()
 {
-    if(!m_notifyMode) return;
-    m_activitytimer.setInterval(TIMEOUT1 * 1000);
-    m_activitytimer.start();
+//    if(!m_notifyMode) return;
+//    m_activitytimer.setInterval(TIMEOUT1 * 1000);
+//    m_activitytimer.start();
 }
 
 void BackEnd::startCheckActivity()
 {
-    this->InstallHook();
-    m_activitytimer_small.setInterval(TIMEOUT2 * 1000);
-    m_activitytimer_small.setSingleShot(true);
-    m_activitytimer_small.start();
-    m_checkactivity = true;
+//    m_appList->setHooks();
+//    m_activitytimer_small.setInterval(TIMEOUT2 * 1000);
+//    m_activitytimer_small.setSingleShot(true);
+//    m_activitytimer_small.start();
+//    m_checkactivity = true;
 }
 
 void BackEnd::stopCheckAvtivity()
 {
-    this->UninstallHook();
-    m_checkactivity = false;
+//    m_appList->unsetHooks();
+//    m_checkactivity = false;
 }
 
 void BackEnd::clearCheckActivity()
 {
-    m_activitytimer.stop();
-    m_activitytimer_small.stop();
-    stopCheckAvtivity();
-    this->UninstallHook();
+//    m_activitytimer.stop();
+//    m_activitytimer_small.stop();
+//    stopCheckAvtivity();
+//    m_appList->unsetHooks();
 }
 
 
@@ -802,6 +746,7 @@ QString BackEnd::filePrefix()
 {
     return m_filePrefix;
 }
+
 
 void BackEnd::setFilePrefix(QString value) {
     if (value.right(1) == "_") {
@@ -815,6 +760,7 @@ void BackEnd::setFilePrefix(QString value) {
     emit filePrefixChanged();
 }
 
+
 QString BackEnd::recordingState()
 {
     if(recordStatus() == RECORD_STATUS::Idle) {
@@ -827,9 +773,11 @@ QString BackEnd::recordingState()
     return "Ready";
 }
 
+
 ThumbProvider::ThumbProvider()
     : QQuickImageProvider(QQuickImageProvider::Image)
 { }
+
 
 QImage ThumbProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
 {
@@ -842,54 +790,3 @@ QImage ThumbProvider::requestImage(const QString &id, QSize *size, const QSize &
         *size = QSize(image.width(), image.height());
     return image;
 }
-
-// TODO: play with whis funciton
-//void BackEnd::ChangeState(States request_state)
-//{
-//    if(request_state == IdleState) {
-//        // stop Recording
-//        // set up check timer
-//    }
-
-//    if(request_state == CheckActivityState) {
-//        // install hooks
-//        // install end of checking timeout
-//    }
-
-//    if()
-
-
-//    if(m_currentstate == IdleState && request_state == CheckActivityState) {
-//        m_activitytimer.setInterval(20 * 1000);
-//        connect(&m_activitytimer, &QTimer::timeout, this, &BackEnd::CheckActivity);
-//        m_activitytimer.start();
-
-//        m_currentstate = request_state;
-//        return;
-//    }
-
-//    // State2
-//    if(m_currentstate == CheckActivityState && request_state == IdleState) {
-//        m_activitytimer.stop();
-//        UninstallHook();
-
-//        m_currentstate = request_state;
-//        return;
-//    }
-
-//    if(m_currentstate == IdleState && request_state == RecordState) {
-//        //Quick Code
-
-//        m_currentstate = request_state;
-//        return;
-//    }
-
-//    if(m_currentstate == RecordState && request_state == IdleState) {
-//        //Quick Code
-
-//        m_currentstate = request_state;
-//        return;
-//    }
-
-//    return;
-//}

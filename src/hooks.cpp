@@ -8,7 +8,7 @@ extern HWND g_hwnd;
 std::vector<HOOKDATA> g_hooks = std::vector<HOOKDATA>();
 
 
-HHOOK InstallHook(HWND hwnd)
+void InstallHook(HWND hwnd)
 {
     BOOL ret;
 
@@ -48,40 +48,18 @@ HHOOK InstallHook(HWND hwnd)
         throw std::exception("[ TASK FAILED SUCCESSFULLY ] Couldn't set the hook with SetWindowsHookEx.");
 
     g_hooks.push_back({dll, handle});
-
-    return handle;
 }
 
 
-//HHOOK InstallGlobalHook()
-//{
-//    HMODULE dll = LoadLibraryEx(L"hooks_dll.dll", NULL, DONT_RESOLVE_DLL_REFERENCES);
-//    if (dll == NULL) throw std::exception("[ TASK FAILED SUCCESSFULLY ] The DLL could not be found.");
+void InstallGlobalHook()
+{
+//    //temporarily disabled
+//    HHOOK handle = ::InstallGlobalHookDll(g_hwnd);
+//    if (handle == NULL)
+//        throw std::exception("[ TASK FAILED SUCCESSFULLY ] Couldn't set the hook with SetWindowsHookEx.");
 
-//    HOOKPROC addr = (HOOKPROC)GetProcAddress(dll, "MultiHookProc");
-//    if (addr == NULL) throw std::exception("[ TASK FAILED SUCCESSFULLY ] The function was not found.");
-
-//    f_funci setGlobalHwnd = (f_funci)GetProcAddress(dll, "setGlobalHwnd");
-//    if(!setGlobalHwnd) throw std::exception("[ TASK FAILED SUCCESSFULLY ] The function setGlobalHwnd was not found.");
-
-//    setGlobalHwnd(g_hwnd);
-
-//    HHOOK handle = SetWindowsHookEx(WH_MOUSE, addr, dll, NULL);
-//    if (handle == NULL) throw std::exception("[ TASK FAILED SUCCESSFULLY ] Couldn't set the hook with SetWindowsHookEx.");
-
-//    qDebug() << "Installed" << handle << "hook";
-
-//    g_hooks.push_back({dll, handle});
-
-//    return handle;
-//}
-
-
-//void UninstallHook(HHOOK hook)
-//{
-//    BOOL ret = UnhookWindowsHookEx(hook);
-//    if (ret == FALSE) throw std::exception("[ TASK FAILED SUCCESSFULLY ] Could not remove the hook.");
-//}
+//    g_hooks.push_back({NULL, handle});
+}
 
 
 void UninstallHooks()
@@ -93,9 +71,11 @@ void UninstallHooks()
         if (ret == FALSE)
             throw std::exception("[ TASK FAILED SUCCESSFULLY ] Could not remove the hook.");
 
-        ret = FreeLibrary(d.hdll);
-        if (ret == FALSE)
-            throw std::exception("[ TASK FAILED SUCCESSFULLY ] Could not unload dll.");
+        if(d.hdll) {
+            ret = FreeLibrary(d.hdll);
+            if (ret == FALSE)
+                throw std::exception("[ TASK FAILED SUCCESSFULLY ] Could not unload dll.");
+        }
     }
 
     g_hooks.clear();

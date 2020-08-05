@@ -28,6 +28,10 @@ public:
     void updateVector(std::vector<HWND>* vector);
     bool isSelected();
 
+    void setHooks();
+    void unsetHooks();
+    void resetHooks();
+
 signals:
 
     void listUpdated();
@@ -36,10 +40,10 @@ signals:
 
 private:
 
-    int AppList::windowsExists(HWND hwnd);
+    int windowsExists(HWND hwnd);
 
     QVector<App> m_data;
-    bool m_hooks = true;
+    bool m_hooks = false;
 
 };
 
