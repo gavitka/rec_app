@@ -43,6 +43,7 @@ private:
 
     QVector<APPDATA> m_data;
     bool m_hooksactive = false;
+    bool m_isselected = false; // cache selected state
 //    std::vector<HOOKDATA> m_hooks;
 
 };

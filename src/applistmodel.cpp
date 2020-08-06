@@ -39,6 +39,7 @@ void AppListModel::setAppManager(AppManager* value)
 {
     m_appmanager = value;
     connect(m_appmanager, &AppManager::listChanged, this, &AppListModel::dataChangedSlot);
+    connect(m_appmanager, &AppManager::selectedChanged, this, &AppListModel::dataChangedSlot);
     dataChangedSlot();
 }
 

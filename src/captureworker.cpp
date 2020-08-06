@@ -11,6 +11,7 @@
 #include "backend.h"
 #include "windows.h"
 #include "blwindow.h"
+#include "lib.h"
 
 extern BLWindow* wnd;
 
@@ -18,8 +19,10 @@ CaptureWorker::CaptureWorker():
     m_updatetimer(this)
 { }
 
-CaptureWorker::~CaptureWorker() {
-}
+
+CaptureWorker::~CaptureWorker()
+{ }
+
 
 void CaptureWorker::start()
 {
@@ -33,12 +36,14 @@ void CaptureWorker::start()
     }
 }
 
+
 void CaptureWorker::stop()
 {
     if(m_pause == true)
         m_pause = false;
     m_stop = true;
 }
+
 
 void CaptureWorker::togglepause()
 {
@@ -47,15 +52,18 @@ void CaptureWorker::togglepause()
     emit statusChanged();
 }
 
+
 bool CaptureWorker::isPaused() {
     return m_pause;
 }
+
 
 void CaptureWorker::kick()
 {
     if(m_sleeptimer.elapsed() >= 3000)
         m_sleeptimer.restart();
 }
+
 
 bool CaptureWorker::CheckWindow()
 {
@@ -71,6 +79,7 @@ bool CaptureWorker::CheckWindow()
     }
     return false;
 }
+
 
 void CaptureWorker::Init()
 {
@@ -155,6 +164,7 @@ void CaptureWorker::Init()
     av_dump_format(ofctx, 0, tempfilename(), 1);
 }
 
+
 void CaptureWorker::Capture()
 {
     if(m_stop) {
@@ -182,6 +192,7 @@ void CaptureWorker::Capture()
     remaining_timeout = (remaining_timeout < 0) ? 0: remaining_timeout;
     QTimer::singleShot(remaining_timeout, this, &CaptureWorker::Capture);
 }
+
 
 void CaptureWorker::Finish()
 {
@@ -215,14 +226,15 @@ void CaptureWorker::Finish()
     emit finished();
 }
 
+
 void CaptureWorker::CaptureFrame()
 {
     QImage image;
     if(m_backEnd->appManager()->isSelected()) {
         if(!IsWindow(m_hwnd)) return;
-        image = CaptureWindow(m_screen, m_hwnd);
+        image = ::captureWindow(m_hwnd);
     } else {
-        image = CaptureScreen(m_screen);
+        image = ::captureScreen();
     }
 
     image = fixAspectRatio(image);
@@ -295,6 +307,7 @@ void CaptureWorker::CaptureFrame()
         av_packet_unref(&pkt);
     }
 }
+
 
 void CaptureWorker::Remux()
 {
@@ -377,15 +390,18 @@ void CaptureWorker::Remux()
     }
 }
 
+
 const char *CaptureWorker::filename()
 {
     return m_b1.constData();
 }
 
+
 const char *CaptureWorker::tempfilename()
 {
     return m_b2.constData();
 }
+
 
 void CaptureWorker::Clear()
 {
@@ -404,45 +420,19 @@ void CaptureWorker::Clear()
     m_updatetimer.stop();
 }
 
-QImage CaptureWorker::CaptureScreen(QScreen* screen)
-{
-    QPixmap pixmap = screen->grabWindow(0);
-    QPixmap pixmap_cursor(":/images/cursor.png");
-    QPainter painter(&pixmap);
-    QPoint p = QCursor::pos();
-    p.setX(p.x() - 32);
-    p.setY(p.y() - 32);
-    painter.drawPixmap(p, pixmap_cursor);
-
-    return pixmap.toImage();
-}
-
-QImage CaptureWorker::CaptureWindow(QScreen* screen, HWND hwnd)
-{
-    QPixmap pixmap = screen->grabWindow((WId)hwnd);
-    QCursor cur(Qt::ArrowCursor);
-    QPixmap pixmap_cursor(":/images/cursor.png");
-    QPainter painter(&pixmap);
-    QPoint p = QCursor::pos();
-    RECT rect;
-    GetWindowRect(hwnd, &rect);
-    p.setX(p.x() - rect.left - 32);
-    p.setY(p.y() - rect.top - 32);
-    painter.drawPixmap(p,pixmap_cursor);
-    return pixmap.toImage();
-}
 
 qint64 CaptureWorker::getShotTimeout()
 {
     return (1000 / m_recordFPS);
 }
 
+
 int CaptureWorker::getShotsPerSecond()
 {
     return m_recordFPS;
 }
 
-// copies QImage
+
 QImage CaptureWorker::fixAspectRatio(QImage img)
 {
     // Possible but not major performance loss here
@@ -457,10 +447,12 @@ QImage CaptureWorker::fixAspectRatio(QImage img)
     }
 }
 
+
 int CaptureWorker::status()
 {
     return m_status;
 }
+
 
 void CaptureWorker::setStatus(int value)
 {
@@ -468,15 +460,18 @@ void CaptureWorker::setStatus(int value)
     emit statusChanged();
 }
 
+
 bool CaptureWorker::sleeping()
 {
     return m_sleepflag;
 }
 
+
 void CaptureWorker::setFrameRate(int value)
 {
     m_recordFPS = value;
 }
+
 
 void CaptureWorker::setCrop(bool value)
 {
@@ -488,11 +483,13 @@ void CaptureWorker::setBitRate(int value)
     m_bitRate = value;
 }
 
+
 void CaptureWorker::update()
 {
     CheckWindow();
     //emit updateVector();
 }
+
 
 void CaptureWorker::checkSleeping(bool makeSleeping)
 {

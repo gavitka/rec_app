@@ -22,6 +22,7 @@
 #include <QThread>
 #include <QMessageBox>
 
+#include "lib.h"
 #include "blwindow.h"
 
 #define HOOKS
@@ -441,7 +442,7 @@ QImage BackEnd::getPreview(int index)
     if(index >= 0 && index < m_appmanager->size()) {
         HWND hwnd = m_appmanager->at(index).hwnd;
         if(IsWindow(hwnd)) {
-            img = CaptureWorker::CaptureWindow(m_screen, hwnd);
+            img = ::captureWindow(hwnd);
             if(!img.isNull())
                 return img;
         }

@@ -59,6 +59,15 @@ void AppManager::add(HWND hwnd)
 void AppManager::select(int i)
 {
     m_data[i].selected = !m_data.at(i).selected;
+
+    bool res = false;
+    for(APPDATA it : m_data) {
+        if(it.selected) {
+            res = true;
+            break;
+        }
+    }
+    m_isselected = res;
     emit selectedChanged();
 }
 
@@ -85,15 +94,11 @@ bool AppManager::check(HWND hwnd)
 
 bool AppManager::isSelected()
 {
-    for(APPDATA it : m_data) {
-        return it.selected ? true : false;
-    }
-    return false;
+    return m_isselected;
 }
 
 void AppManager::installHook()
 {
-    qDebug() << g_hwnd;
     InstallGlobalHookDll(g_hwnd);
 }
 

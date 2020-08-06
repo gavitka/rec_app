@@ -10,6 +10,7 @@
 
 #include "backend.h"
 
+
 class BackEnd;
 
 extern "C"
@@ -56,10 +57,6 @@ public:
 
     bool isPaused();
     void kick();
-
-
-    static QImage CaptureScreen(QScreen* screen);
-    static QImage CaptureWindow(QScreen* screen, HWND hwnd);
 
     int FPS();
     qint64 getShotTimeout();

@@ -18,9 +18,14 @@ public:
         Q_UNUSED(eventType)
         MSG* msg = (MSG*)(message);
         if(msg->message == WM_KEYSTROKE) {
-            HWND hwnd = ::GetForegroundWindow();
-            if(BackEnd::getInstance()->appManager()->check(hwnd))
+            //qDebug() << "isSelected" << BackEnd::getInstance()->appManager()->isSelected();
+            if(!BackEnd::getInstance()->appManager()->isSelected()) {
                 BackEnd::getInstance()->kick();
+            } else {
+                HWND hwnd = ::GetForegroundWindow();
+                if(BackEnd::getInstance()->appManager()->check(hwnd))
+                    BackEnd::getInstance()->kick();
+            }
         }
         return false;
     }

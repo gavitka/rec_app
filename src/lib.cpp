@@ -7,6 +7,12 @@
 #include <QFile>
 #include <QDateTime>
 #include <QFileInfo>
+#include <QGuiApplication>
+#include <QScreen>
+#include <QImage>
+#include <QPixmap>
+#include <QtWin>
+#include <QPainter>
 
 QString int00(int i)
 {
@@ -104,4 +110,58 @@ BOOL getWindowInfo(HWND hwnd, QString& title, QString& exeName, bool& is64)
     is64 = !isWow64;
 
     return TRUE;
+}
+
+
+QImage captureWindow(HWND hwnd)
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QPixmap pixmap = screen->grabWindow((WId)hwnd);
+
+    CURSORINFO cursor;
+    cursor.cbSize = sizeof(CURSORINFO);
+    if(::GetCursorInfo(&cursor)) {
+        if (cursor.flags == CURSOR_SHOWING) {
+            ICONINFOEXW info;
+            info.cbSize = sizeof(ICONINFOEXW);
+            ::GetIconInfoExW(cursor.hCursor, &info);
+            QPixmap cursor_pixmap = QtWin::fromHBITMAP(info.hbmColor, QtWin::HBitmapAlpha);
+            RECT rc;
+            GetWindowRect(hwnd, &rc);
+            QPoint p(
+                cursor.ptScreenPos.x - rc.left - info.xHotspot,
+                cursor.ptScreenPos.y - rc.top - info.yHotspot
+            );
+            QPainter painter(&pixmap);
+            painter.drawPixmap(p, cursor_pixmap);
+        }
+    }
+
+    return pixmap.toImage();
+}
+
+
+QImage captureScreen()
+{
+    QScreen *screen = QGuiApplication::primaryScreen();
+    QPixmap pixmap = screen->grabWindow(0);
+
+    CURSORINFO cursor;
+    cursor.cbSize = sizeof(CURSORINFO);
+    if(::GetCursorInfo(&cursor)) {
+        if (cursor.flags == CURSOR_SHOWING) {
+            ICONINFOEXW info;
+            info.cbSize = sizeof(ICONINFOEXW);
+            ::GetIconInfoExW(cursor.hCursor, &info);
+            QPixmap cursor_pixmap = QtWin::fromHBITMAP(info.hbmColor, QtWin::HBitmapAlpha);
+            QPoint p(
+                cursor.ptScreenPos.x - info.xHotspot,
+                cursor.ptScreenPos.y - info.yHotspot
+            );
+            QPainter painter(&pixmap);
+            painter.drawPixmap(p, cursor_pixmap);
+        }
+    }
+
+    return pixmap.toImage();
 }

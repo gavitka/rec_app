@@ -17,7 +17,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 add_definitions(-DUNICODE -D_UNICODE)
-add_definitions(-DMESSAGE_HANDLER)
+#add_definitions(-DMESSAGE_HANDLER)
 
 find_package(Qt5 COMPONENTS
     Widgets
@@ -62,14 +62,15 @@ add_executable(${PROJECT_NAME} WIN32
     src/performancetimer.h
     src/appmanager.cpp
     src/appmanager.h
+    src/pch.cpp
     src/pch.h
-    src/lib.h
     src/lib.cpp
-    src/blwindow.h
+    src/lib.h
     src/blwindow.cpp
+    src/blwindow.h
 
-    src/lib/wintoastlib.h
     src/lib/wintoastlib.cpp
+    src/lib/wintoastlib.h
 
     README.md
     installer/installer.nsi

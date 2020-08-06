@@ -333,9 +333,8 @@ BLWindow {
                     }
                     Label {
                         Layout.fillWidth: true
-                        text: "Select windows for recording. If window recording mode is active " +
-                              "only selected windows will be recorded, otherwise, selected windows " +
-                              "will be used to determine mouse input for sleeping mode option."
+                        text: "Select windows for recording. If no windows is selected, entire screen will " +
+                              " be recorded."
                         font.pointSize: 10
                         wrapMode: Text.WordWrap
                     }
