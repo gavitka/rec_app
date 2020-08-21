@@ -116,13 +116,10 @@ BackEnd::BackEnd(QObject *parent) :
     m_frameRateList.append(new ListElement(FRAMERATES::x8, "8x"));
     m_frameRateList.append(new ListElement(FRAMERATES::x16, "16x"));
 
-    m_screen = QGuiApplication::primaryScreen();
-
     // Application list model
     m_appmanager = new AppManager();
     connect(m_appmanager, &AppManager::selectedChanged, this, &BackEnd::selectedChangedSlot);
 
-    if (wnd != nullptr) m_screen = wnd->screen();
     refreshUI();
 
     ///////////// Setting up WinToast ///////////////
@@ -168,7 +165,6 @@ BackEnd::BackEnd(QObject *parent) :
 BackEnd::~BackEnd()
 {
     m_appmanager->uninstallHook();
-    delete m_screen;
 }
 
 

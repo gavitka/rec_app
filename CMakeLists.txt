@@ -101,9 +101,9 @@ target_include_directories(${PROJECT_DLL} PUBLIC
     "${CMAKE_SOURCE_DIR}/src/"
     )
 
-target_include_directories(${PROJECT_DLL} PUBLIC
-    "${CMAKE_SOURCE_DIR}/src/"
-    )
+#target_include_directories(${PROJECT_NAME} PUBLIC
+#    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/winrt"
+#    )
 
 target_precompile_headers(${PROJECT_NAME}
     PUBLIC src/pch.h
