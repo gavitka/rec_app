@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 
     auto obj = engine.rootObjects().at(0);
     if( !(wnd = qobject_cast<BLWindow*>(obj) ))
-        throw std::exception("Unable to cast window");
+        throw std::runtime_error("Unable to cast window");
 
     g_hwnd = (HWND)wnd->winId();
 

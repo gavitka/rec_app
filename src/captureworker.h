@@ -144,4 +144,5 @@ private:
 
     int m_status;
     BackEnd* m_backEnd;
+    QMutex m_mux;
 };

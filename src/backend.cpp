@@ -1,5 +1,3 @@
-#pragma once
-
 #include "backend.h"
 
 #include <stdio.h>
@@ -42,34 +40,28 @@ extern HWND g_hwnd;
 class CustomHandler : public WinToastLib::IWinToastHandler {
 public:
     void toastActivated() const {
-        qDebug() << "The user clicked in this toast";
         wnd->requestActivate();
     }
-
     void toastActivated(int actionIndex) const {
-        qDebug() << "The user clicked on button #" << actionIndex << L" in this toast";
         wnd->requestActivate();
-        // TODO: Show Window
     }
-
     void toastFailed() const {
         qDebug() << "Error showing current toast";
     }
     void toastDismissed(WinToastDismissalReason state) const {
         switch (state) {
         case UserCanceled:
-            qDebug() << "The user dismissed this toast";
+            //qDebug() << "The user dismissed this toast";
             BackEnd::getInstance()->setNotifyMode(false);
             break;
         case ApplicationHidden:
-            qDebug() << "The application hid the toast using ToastNotifier.hide()";
+            //qDebug() << "The application hid the toast using ToastNotifier.hide()";
             break;
         case TimedOut:
-            qDebug() << "The toast has timed out";
-            // TODO: Do nothink
+            //qDebug() << "The toast has timed out";
             break;
         default:
-            qDebug() << "Toast not activated";
+            //qDebug() << "Toast not activated";
             break;
         }
     }
@@ -141,8 +133,8 @@ BackEnd::BackEnd(QObject *parent) :
                                         L"rec_app",
                                         L"rec_app",
                                         L"1.0")); // TODO: update
-    if (!WinToast::instance()->initialize())
-        qDebug() << "Error, your system in not compatible!";
+    if (!WinToast::instance()->initialize()) qDebug() << "Error, your system in not compatible!";
+
     m_templ = WinToastTemplate(WinToastTemplate::Text02);
     m_templ.setTextField(
                 QString("Bruh...").toStdWString(),
@@ -162,9 +154,10 @@ BackEnd::BackEnd(QObject *parent) :
     QTimer::singleShot(1000, m_appmanager, &AppManager::refresh);
     QTimer::singleShot(2000, m_appmanager, &AppManager::installHook);
 
-    m_colortimer.setInterval(200);
-    connect(&m_colortimer, &QTimer::timeout, this, &BackEnd::colorChange);
-    m_colortimer.start();
+// Only for debug
+//    m_colortimer.setInterval(200);
+//    connect(&m_colortimer, &QTimer::timeout, this, &BackEnd::colorChange);
+//    m_colortimer.start();
 
     m_activitytimer.setInterval(30000);
     connect(&m_activitytimer, &QTimer::timeout, this, &BackEnd::checkActivity);
@@ -188,7 +181,7 @@ void BackEnd::kick()
     if(!isRecording() && m_activity == false) {
         if(notifyMode() == true) {
             if (WinToast::instance()->showToast(m_templ, new CustomHandler()) < 0)
-                throw new std::exception("Could not launch your toast notification!");
+                throw new std::runtime_error("Could not launch your toast notification!");
         }
     }
     m_activity = true;
@@ -642,11 +635,6 @@ QSettings *BackEnd::getSettings()
 
 
 void BackEnd::checkActivity() {
-//    if(m_activity && notifyMode() == true) {
-//        if (WinToast::instance()->showToast(m_templ, new CustomHandler()) < 0) {
-//            throw new std::exception("Could not launch your toast notification!");
-//        }
-//    }
     m_activity = false;
 }
 

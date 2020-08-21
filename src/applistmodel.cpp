@@ -35,11 +35,16 @@ QVariant AppListModel::data(const QModelIndex &index, int role) const
     return false;
 }
 
+AppManager *AppListModel::appManager()
+{
+    return m_appmanager;
+}
+
 void AppListModel::setAppManager(AppManager* value)
 {
     m_appmanager = value;
     connect(m_appmanager, &AppManager::listChanged, this, &AppListModel::dataChangedSlot);
-    connect(m_appmanager, &AppManager::selectedChanged, this, &AppListModel::dataChangedSlot);
+    connect(m_appmanager, &AppManager::selectedChanged, this, &AppListModel::selectedChangedSlot);
     dataChangedSlot();
 }
 
@@ -60,4 +65,11 @@ void AppListModel::dataChangedSlot()
     emit dataChanged(topLeft, bottomRight, QVector<int>());
     beginResetModel();
     endResetModel();
+}
+
+void AppListModel::selectedChangedSlot()
+{
+    QModelIndex topLeft = QAbstractItemModel::createIndex(0, 0);
+    QModelIndex bottomRight = QAbstractItemModel::createIndex(m_appmanager->size()-1, 0);
+    emit dataChanged(topLeft, bottomRight, QVector<int>({SelectedRole}));
 }

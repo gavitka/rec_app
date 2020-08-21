@@ -28,7 +28,7 @@ void AppManager::refresh()
 
     BOOL ret = EnumWindows(windowListCallback, reinterpret_cast<LPARAM>(this));
     if(!ret)
-        throw std::exception("[TASK FAILED SUCCESSFULLY] Could not get windows list");
+        throw std::runtime_error("[TASK FAILED SUCCESSFULLY] Could not get windows list");
 
     emit listChanged();
 }
@@ -50,7 +50,7 @@ void AppManager::add(HWND hwnd)
         if(res && IsWindowVisible(hwnd)) {
             m_data.push_back({hwnd, name, exeName, is64, false});
         }
-    } catch(std::exception e) {
+    } catch(std::runtime_error e) {
         qDebug() << e.what();
     }
 }

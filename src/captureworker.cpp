@@ -13,8 +13,6 @@
 #include "blwindow.h"
 #include "lib.h"
 
-extern BLWindow* wnd;
-
 CaptureWorker::CaptureWorker():
     m_updatetimer(this)
 { }
@@ -30,7 +28,7 @@ void CaptureWorker::start()
         Init();
         // Start capture
         QTimer::singleShot(0, this, &CaptureWorker::Capture);
-    } catch (std::exception e) {
+    } catch (std::runtime_error e) {
         qDebug(e.what());
         exit(-1);
     }
@@ -60,7 +58,7 @@ bool CaptureWorker::isPaused() {
 
 void CaptureWorker::kick()
 {
-    if(m_sleeptimer.elapsed() >= 3000)
+    if(m_sleeptimer.elapsed() >= (qint64)3000)
         m_sleeptimer.restart();
 }
 
@@ -83,10 +81,6 @@ bool CaptureWorker::CheckWindow()
 
 void CaptureWorker::Init()
 {
-    m_screen = QGuiApplication::primaryScreen();
-    if (wnd)
-        m_screen = wnd->screen();
-
     m_updatetimer.setInterval(1000);
     connect(&m_updatetimer, &QTimer::timeout, this, &CaptureWorker::update, Qt::DirectConnection);
 
@@ -116,19 +110,19 @@ void CaptureWorker::Init()
     int err;
 
     if (!(oformat = av_guess_format(nullptr, tempfilename(), nullptr)))
-        throw std::exception("Failed to define output format");
+        throw std::runtime_error("Failed to define output format");
 
     if ((err = avformat_alloc_output_context2(&ofctx, oformat, nullptr, tempfilename()) < 0))
-        throw std::exception("Failed to allocate output context");
+        throw std::runtime_error("Failed to allocate output context");
 
     if (!(codec = avcodec_find_encoder(oformat->video_codec)))
-        throw std::exception("Failed to find encoder");
+        throw std::runtime_error("Failed to find encoder");
 
     if (!(videoStream = avformat_new_stream(ofctx, codec)))
-        throw std::exception("Failed to create new stream");
+        throw std::runtime_error("Failed to create new stream");
 
     if (!(cctx = avcodec_alloc_context3(codec)))
-        throw std::exception("Failed to allocate codec context");
+        throw std::runtime_error("Failed to allocate codec context");
 
     videoStream->codecpar->codec_id = oformat->video_codec;
     videoStream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -151,15 +145,15 @@ void CaptureWorker::Init()
     avcodec_parameters_from_context(videoStream->codecpar, cctx);
 
     if ((err = avcodec_open2(cctx, codec, nullptr)) < 0)
-        throw std::exception("Failed to open codec");
+        throw std::runtime_error("Failed to open codec");
 
     if (!(oformat->flags & AVFMT_NOFILE)) {
         if ((err = avio_open(&ofctx->pb, tempfilename(), AVIO_FLAG_WRITE)) < 0)
-            throw std::exception("Failed to open file");
+            throw std::runtime_error("Failed to open file");
     }
 
     if ((err = avformat_write_header(ofctx, nullptr)) < 0)
-        throw std::exception("Failed to write header");
+        throw std::runtime_error("Failed to write header");
 
     av_dump_format(ofctx, 0, tempfilename(), 1);
 }
@@ -167,21 +161,23 @@ void CaptureWorker::Init()
 
 void CaptureWorker::Capture()
 {
+    m_mux.lock();
     if(m_stop) {
         QTimer::singleShot(0, this, &CaptureWorker::Finish);
         return;
     }
 
-    //qDebug() << "working";
-
-    // TODO: Add mutex
     QElapsedTimer frametimer;
     frametimer.start();
 
-    if(!m_pause)
-    {
-        if(m_sleeptimer.elapsed() < 3000 || !BackEnd::getInstance()->sleepMode()) {
-            CaptureFrame();
+    if(!m_pause) {
+        if(m_sleeptimer.elapsed() < (qint64)3000 || !BackEnd::getInstance()->sleepMode()) {
+            try {
+                CaptureFrame();
+            }
+            catch(std::runtime_error e) {
+                qDebug() << e.what();
+            }
             checkSleeping(false);
         } else {
             checkSleeping(true);
@@ -191,6 +187,7 @@ void CaptureWorker::Capture()
     qint64 remaining_timeout = getShotTimeout() - frametimer.elapsed();
     remaining_timeout = (remaining_timeout < 0) ? 0: remaining_timeout;
     QTimer::singleShot(remaining_timeout, this, &CaptureWorker::Capture);
+    m_mux.unlock();
 }
 
 
@@ -215,7 +212,7 @@ void CaptureWorker::Finish()
     if (!(oformat->flags & AVFMT_NOFILE)) {
         int err = avio_close(ofctx->pb);
         if (err < 0) {
-            throw std::exception("Failed to close file");
+            throw std::runtime_error("Failed to close file");
         }
     }
 
@@ -248,7 +245,7 @@ void CaptureWorker::CaptureFrame()
         videoFrame->height = cctx->height;
 
         if ((err = av_frame_get_buffer(videoFrame, 32)) < 0) {
-            throw std::exception("Failed to allocate picture");
+            throw std::runtime_error("Failed to allocate picture");
         }
     }
 
@@ -280,7 +277,7 @@ void CaptureWorker::CaptureFrame()
     srcstride[0] = image.width() * 4;
     const uchar* planes[1];
     planes[0] = image.bits();
-    sws_scale(
+    int res = sws_scale(
             swsCtx,
             planes,
             srcstride,
@@ -289,11 +286,12 @@ void CaptureWorker::CaptureFrame()
             videoFrame->data,
             videoFrame->linesize
             );
+    if(res == 0) throw std::runtime_error("Failed to swsScale");
 
     videoFrame->pts = frameCounter++;
 
     if ((err = avcodec_send_frame(cctx, videoFrame)) < 0) {
-        throw std::exception("Failed to send frame");
+        throw std::runtime_error("Failed to send frame");
     }
 
     AVPacket pkt;
@@ -317,22 +315,22 @@ void CaptureWorker::Remux()
     try {
         [&](){
             if ((err = avformat_open_input(&ifmt_ctx, tempfilename(), nullptr, nullptr)) < 0) {
-                throw std::exception("Failed to open input file for remuxing");
+                throw std::runtime_error("Failed to open input file for remuxing");
                 return;
             }
             if ((err = avformat_find_stream_info(ifmt_ctx, nullptr)) < 0) {
-                throw std::exception("Failed to retrieve input stream information");
+                throw std::runtime_error("Failed to retrieve input stream information");
                 return;
             }
             if ((err = avformat_alloc_output_context2(&ofmt_ctx, nullptr, nullptr, filename()))) {
-                throw std::exception("Failed to allocate output context");
+                throw std::runtime_error("Failed to allocate output context");
                 return;
             }
 
             AVStream *inVideoStream = ifmt_ctx->streams[0];
             AVStream *outVideoStream = avformat_new_stream(ofmt_ctx, nullptr);
             if (!outVideoStream) {
-                throw std::exception("Failed to allocate output video stream");
+                throw std::runtime_error("Failed to allocate output video stream");
                 return;
             }
             outVideoStream->time_base = { 1, m_playFPS };
@@ -341,13 +339,13 @@ void CaptureWorker::Remux()
 
             if (!(ofmt_ctx->oformat->flags & AVFMT_NOFILE)) {
                 if ((err = avio_open(&ofmt_ctx->pb, filename(), AVIO_FLAG_WRITE)) < 0) {
-                    throw std::exception("Failed to open output file");
+                    throw std::runtime_error("Failed to open output file");
                     return;
                 }
             }
 
             if ((err = avformat_write_header(ofmt_ctx, nullptr)) < 0) {
-                throw std::exception("Failed to write header to output file");
+                throw std::runtime_error("Failed to write header to output file");
                 return;
             }
 
@@ -365,7 +363,7 @@ void CaptureWorker::Remux()
                 videoPkt.pos = -1;
 
                 if ((err = av_interleaved_write_frame(ofmt_ctx, &videoPkt)) < 0) {
-                    throw std::exception("Failed to mux packet");
+                    throw std::runtime_error("Failed to mux packet");
                     av_packet_unref(&videoPkt);
                     break;
                 }
@@ -374,7 +372,7 @@ void CaptureWorker::Remux()
 
             av_write_trailer(ofmt_ctx);
         }();
-    } catch (std::exception e)
+    } catch (std::runtime_error e)
     {
         qDebug() << "e.what()" << e.what();
     }
@@ -487,7 +485,6 @@ void CaptureWorker::setBitRate(int value)
 void CaptureWorker::update()
 {
     CheckWindow();
-    //emit updateVector();
 }
 
 

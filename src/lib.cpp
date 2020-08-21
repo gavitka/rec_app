@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <psapi.h>
+#include <math.h>
 
 #include <QFile>
 #include <QDateTime>
@@ -94,18 +95,17 @@ BOOL getWindowInfo(HWND hwnd, QString& title, QString& exeName, bool& is64)
     if(!hproc) {
         return FALSE;
     }
-    //    throw std::exception("[ TASK FAILED SUCCESSFULLY ] Unable to read process.");
 
     DWORD res2 = ::GetModuleFileNameEx(hproc, 0, fileName, MAX_PATH);
     if(res2 == 0)
-        throw std::exception("[ TASK FAILED SUCCESSFULLY ] Unable to read process name.");
+        throw std::runtime_error("[ TASK FAILED SUCCESSFULLY ] Unable to read process name.");
 
     exeName = QFileInfo(QString::fromWCharArray(fileName)).fileName();
 
     BOOL isWow64;
     BOOL res3 = IsWow64Process(hproc, &isWow64);
     if(!res3)
-        throw std::exception("[ TASK FAILED SUCCESSFULLY ] Could not get determie process bitness");
+        throw std::runtime_error("[ TASK FAILED SUCCESSFULLY ] Could not get determie process bitness");
 
     is64 = !isWow64;
 
@@ -120,23 +120,10 @@ QImage captureWindow(HWND hwnd)
 
     CURSORINFO cursor;
     cursor.cbSize = sizeof(CURSORINFO);
-    if(::GetCursorInfo(&cursor)) {
-        if (cursor.flags == CURSOR_SHOWING) {
-            ICONINFOEXW info;
-            info.cbSize = sizeof(ICONINFOEXW);
-            ::GetIconInfoExW(cursor.hCursor, &info);
-            QPixmap cursor_pixmap = QtWin::fromHBITMAP(info.hbmColor, QtWin::HBitmapAlpha);
-            RECT rc;
-            GetWindowRect(hwnd, &rc);
-            QPoint p(
-                cursor.ptScreenPos.x - rc.left - info.xHotspot,
-                cursor.ptScreenPos.y - rc.top - info.yHotspot
-            );
-            QPainter painter(&pixmap);
-            painter.drawPixmap(p, cursor_pixmap);
-        }
-    }
 
+    RECT rc;
+    GetWindowRect(hwnd, &rc);
+    drawCursor(pixmap, rc.left, rc.top);
     return pixmap.toImage();
 }
 
@@ -145,23 +132,31 @@ QImage captureScreen()
 {
     QScreen *screen = QGuiApplication::primaryScreen();
     QPixmap pixmap = screen->grabWindow(0);
+    drawCursor(pixmap, 0, 0);
+    return pixmap.toImage();
+}
 
+
+void drawCursor(QPixmap pixmap, int offsetx, int offsety)
+{
     CURSORINFO cursor;
     cursor.cbSize = sizeof(CURSORINFO);
-    if(::GetCursorInfo(&cursor)) {
-        if (cursor.flags == CURSOR_SHOWING) {
-            ICONINFOEXW info;
-            info.cbSize = sizeof(ICONINFOEXW);
-            ::GetIconInfoExW(cursor.hCursor, &info);
-            QPixmap cursor_pixmap = QtWin::fromHBITMAP(info.hbmColor, QtWin::HBitmapAlpha);
-            QPoint p(
-                cursor.ptScreenPos.x - info.xHotspot,
-                cursor.ptScreenPos.y - info.yHotspot
-            );
-            QPainter painter(&pixmap);
-            painter.drawPixmap(p, cursor_pixmap);
-        }
-    }
+    if(!::GetCursorInfo(&cursor)) return;
+    if(cursor.flags != CURSOR_SHOWING) return;
 
-    return pixmap.toImage();
+    ICONINFOEXW info;
+    info.cbSize = sizeof(ICONINFOEXW);
+    BOOL res = ::GetIconInfoExW(cursor.hCursor, &info);
+    if(!res) return;
+
+    QPixmap cursor_pixmap = QtWin::fromHBITMAP(info.hbmColor, QtWin::HBitmapAlpha);
+    if(cursor_pixmap.isNull()) return;
+
+    QPoint p(
+            cursor.ptScreenPos.x - offsetx - info.xHotspot,
+            cursor.ptScreenPos.y - offsety - info.yHotspot
+            );
+    QPainter painter(&pixmap);
+    painter.drawPixmap(p, cursor_pixmap);
+
 }

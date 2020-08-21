@@ -18,7 +18,6 @@ public:
         Q_UNUSED(eventType)
         MSG* msg = (MSG*)(message);
         if(msg->message == WM_KEYSTROKE) {
-            //qDebug() << "isSelected" << BackEnd::getInstance()->appManager()->isSelected();
             if(!BackEnd::getInstance()->appManager()->isSelected()) {
                 BackEnd::getInstance()->kick();
             } else {

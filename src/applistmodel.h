@@ -11,7 +11,7 @@ class AppListModel : public QAbstractListModel
 {
     Q_OBJECT
 
-    Q_PROPERTY(AppManager* appManager WRITE setAppManager)
+    Q_PROPERTY(AppManager* appManager READ appManager WRITE setAppManager)
 
 public:
 
@@ -25,12 +25,15 @@ public:
     QHash<int, QByteArray> roleNames() const;
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
+
+    AppManager *appManager();
     void setAppManager(AppManager* value);
 
 public slots:
 
     void select(int i);
     void dataChangedSlot();
+    void selectedChangedSlot();
 
 private:
 

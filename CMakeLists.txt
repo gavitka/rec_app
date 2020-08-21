@@ -1,6 +1,11 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.17)
+
+set(CMAKE_C_COMPILER C:/msys64/mingw64/bin/gcc.exe)
+set(CMAKE_CXX_COMPILER C:/msys64/mingw64/bin/g++.exe)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+project("time_lapse_rec")
 
 find_package(ffmpeg REQUIRED)
 find_package(x264 REQUIRED)
@@ -10,14 +15,13 @@ include_directories(
     ${LIBX264_INCLUDE_DIR}
 )
 
-project("time_lapse_rec")
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 add_definitions(-DUNICODE -D_UNICODE)
-#add_definitions(-DMESSAGE_HANDLER)
+add_definitions(-DMESSAGE_HANDLER) # debug to c:/temp/log.txt
 
 find_package(Qt5 COMPONENTS
     Widgets
@@ -169,8 +173,9 @@ target_link_libraries(${PROJECT_DLL} Qt5::Core)
 # set startup project in Visual Studio
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
+# if(CMAKE_BUILD_TYPE STREQUAL "Release")
 
+if(TRUE)
 # RUNNUNG WINDEPLOYQT
 
 # Retrieve the absolute path to qmake and then use that path to find
