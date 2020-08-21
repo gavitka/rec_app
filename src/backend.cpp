@@ -24,12 +24,11 @@
 #include "blwindow.h"
 
 #define HOOKS
-//#undef HOOKS
 
 #define TIMEOUT1 30
 #define TIMEOUT2 5
 
-using namespace WinToastLib;
+//using namespace WinToastLib;
 
 BackEnd* BackEnd::m_instance = nullptr;
 
@@ -37,35 +36,35 @@ extern BLWindow* wnd;
 
 extern HWND g_hwnd;
 
-class CustomHandler : public WinToastLib::IWinToastHandler {
-public:
-    void toastActivated() const {
-        wnd->requestActivate();
-    }
-    void toastActivated(int actionIndex) const {
-        wnd->requestActivate();
-    }
-    void toastFailed() const {
-        qDebug() << "Error showing current toast";
-    }
-    void toastDismissed(WinToastDismissalReason state) const {
-        switch (state) {
-        case UserCanceled:
-            //qDebug() << "The user dismissed this toast";
-            BackEnd::getInstance()->setNotifyMode(false);
-            break;
-        case ApplicationHidden:
-            //qDebug() << "The application hid the toast using ToastNotifier.hide()";
-            break;
-        case TimedOut:
-            //qDebug() << "The toast has timed out";
-            break;
-        default:
-            //qDebug() << "Toast not activated";
-            break;
-        }
-    }
-};
+//class CustomHandler : public WinToastLib::IWinToastHandler {
+//public:
+//    void toastActivated() const {
+//        wnd->requestActivate();
+//    }
+//    void toastActivated(int actionIndex) const {
+//        wnd->requestActivate();
+//    }
+//    void toastFailed() const {
+//        qDebug() << "Error showing current toast";
+//    }
+//    void toastDismissed(WinToastDismissalReason state) const {
+//        switch (state) {
+//        case UserCanceled:
+//            //qDebug() << "The user dismissed this toast";
+//            BackEnd::getInstance()->setNotifyMode(false);
+//            break;
+//        case ApplicationHidden:
+//            //qDebug() << "The application hid the toast using ToastNotifier.hide()";
+//            break;
+//        case TimedOut:
+//            //qDebug() << "The toast has timed out";
+//            break;
+//        default:
+//            //qDebug() << "Toast not activated";
+//            break;
+//        }
+//    }
+//};
 
 
 QObject *BackEnd::qmlInstance(QQmlEngine *engine, QJSEngine *scriptEngine) {
@@ -116,7 +115,6 @@ BackEnd::BackEnd(QObject *parent) :
     m_frameRateList.append(new ListElement(FRAMERATES::x8, "8x"));
     m_frameRateList.append(new ListElement(FRAMERATES::x16, "16x"));
 
-    // Application list model
     m_appmanager = new AppManager();
     connect(m_appmanager, &AppManager::selectedChanged, this, &BackEnd::selectedChangedSlot);
 
@@ -124,25 +122,25 @@ BackEnd::BackEnd(QObject *parent) :
 
     ///////////// Setting up WinToast ///////////////
 
-    WinToast::instance()->setAppName(QCoreApplication::applicationName().toStdWString());
-    WinToast::instance()->setAppUserModelId(
-                WinToast::configureAUMI(QCoreApplication::organizationName().toStdWString(),
-                                        L"rec_app",
-                                        L"rec_app",
-                                        L"1.0")); // TODO: update
-    if (!WinToast::instance()->initialize()) qDebug() << "Error, your system in not compatible!";
+//    WinToast::instance()->setAppName(QCoreApplication::applicationName().toStdWString());
+//    WinToast::instance()->setAppUserModelId(
+//                WinToast::configureAUMI(QCoreApplication::organizationName().toStdWString(),
+//                                        L"rec_app",
+//                                        L"rec_app",
+//                                        L"1.0")); // TODO: update
+//    if (!WinToast::instance()->initialize()) qDebug() << "Error, your system in not compatible!";
 
-    m_templ = WinToastTemplate(WinToastTemplate::Text02);
-    m_templ.setTextField(
-                QString("Bruh...").toStdWString(),
-                WinToastTemplate::FirstLine);
-    m_templ.setTextField(
-                (QString("Looks like you are active on windows that ") +
-                        "you selected. Didn't you kinda forget " +
-                        "to start recording?").toStdWString(),
-                WinToastTemplate::SecondLine);
-    m_templ.setAudioPath(WinToastTemplate::AudioSystemFile::Reminder);
-    m_templ.setDuration(WinToastTemplate::Duration::System);
+//    m_templ = WinToastTemplate(WinToastTemplate::Text02);
+//    m_templ.setTextField(
+//                QString("Bruh...").toStdWString(),
+//                WinToastTemplate::FirstLine);
+//    m_templ.setTextField(
+//                (QString("Looks like you are active on windows that ") +
+//                        "you selected. Didn't you kinda forget " +
+//                        "to start recording?").toStdWString(),
+//                WinToastTemplate::SecondLine);
+//    m_templ.setAudioPath(WinToastTemplate::AudioSystemFile::Reminder);
+//    m_templ.setDuration(WinToastTemplate::Duration::System);
 
     /////////////////////////////////////////////////
 
@@ -175,10 +173,10 @@ void BackEnd::kick()
     }
 
     if(!isRecording() && m_activity == false) {
-        if(notifyMode() == true) {
-            if (WinToast::instance()->showToast(m_templ, new CustomHandler()) < 0)
-                throw new std::runtime_error("Could not launch your toast notification!");
-        }
+//        if(notifyMode() == true) {
+//            if (WinToast::instance()->showToast(m_templ, new CustomHandler()) < 0)
+//                throw new std::runtime_error("Could not launch your toast notification!");
+//        }
     }
     m_activity = true;
     setColor(QColor("red"));

@@ -73,8 +73,8 @@ add_executable(${PROJECT_NAME} WIN32
     src/blwindow.cpp
     src/blwindow.h
 
-    src/lib/wintoastlib.cpp
-    src/lib/wintoastlib.h
+    #src/lib/wintoastlib.cpp
+    #src/lib/wintoastlib.h
 
     README.md
     installer/installer.nsi
@@ -115,8 +115,9 @@ target_precompile_headers(${PROJECT_DLL}
 
 target_compile_definitions(${PROJECT_DLL} PUBLIC DLLEXPORT)
 
-set(CMAKE_EXE_LINKER_FLAGS
-    "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMT")
+# removed for minGW
+# set(CMAKE_EXE_LINKER_FLAGS
+#    "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMT")
 
 # Do i really need to link all this SHIT?
 
@@ -128,15 +129,14 @@ set(LIBS
     Qt5::Multimedia
     Qt5::WinExtras
     dwmapi
-    ${FFMPEG_LIBX264}
-    ${FFMPEG_LIBAVCODEC}
-    ${FFMPEG_LIBAVDEVICE}
-    ${FFMPEG_LIBAVFILTER}
     ${FFMPEG_LIBAVFORMAT}
-    ${FFMPEG_LIBAVUTIL}
-    ${FFMPEG_LIBPOSTPROC}
+    ${FFMPEG_LIBAVCODEC}
     ${FFMPEG_LIBSWRESAMPLE}
     ${FFMPEG_LIBSWSCALE}
+    ${FFMPEG_LIBAVUTIL}
+    ${FFMPEG_LIBAVFILTER}
+    ${FFMPEG_LIBAVDEVICE}
+    ${FFMPEG_LIBPOSTPROC}
     bcrypt
     gdi32
     kernel32
@@ -154,14 +154,23 @@ set(LIBS
     Secur32
     Strmiids
     Mf
-    Mfcore
+#    Mfcore
     Mfplat
-    mfplay
+#    mfplay
     mfreadwrite
-    mfsensorgroup
-    Mfsrcsnk
+#    mfsensorgroup
+#    Mfsrcsnk
     mfuuid
     Kernel32
+    ao
+    m
+    z
+    lzma
+    bz2
+#    va
+    #rt
+    iconv
+    ${FFMPEG_LIBX264}
     )
 
 target_link_libraries(${PROJECT_NAME} ${LIBS})

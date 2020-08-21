@@ -2,7 +2,7 @@ SET(CMAKE_FIND_LIBRARY_SUFFIXES "" ".lib" ".a" ".dll")
 
 SET(LIBX264_BUILD
     C:/dev/lib/x264_build
-    D:/dev/lib/x264/installed
+    D:/dev/lib/x264_build
     )
 
 find_path(
