@@ -99,12 +99,16 @@ bool AppManager::isSelected()
 
 void AppManager::installHook()
 {
+#ifdef HOOKS
     InstallGlobalHookDll(g_hwnd);
+#endif
 }
 
 void AppManager::uninstallHook()
 {
+#ifdef HOOKS
     UninstallGlobalHookDll();
+#endif
 }
 
 

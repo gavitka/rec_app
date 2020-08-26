@@ -75,8 +75,8 @@ public slots:
 
     void start();
     void stop();
-    void update();
     void Finish();
+    bool CheckWindow();
 
 signals:
 
@@ -92,7 +92,6 @@ signals:
 private:
 
     void checkSleeping(bool makeSleeping);
-    bool CheckWindow();
 
     void Init();
     void Clear();

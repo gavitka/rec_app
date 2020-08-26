@@ -12,17 +12,23 @@ videos of digital artwork. For Windows only.
 ## TODO:
 
 - [ ] Support x86 processes
-- [ ] Recording status window
-- [ ] Not recordnig alert
+- [ ] Improve status window (it's kinda ugly now)
 - [ ] Textarea don't lose focus
-- [ ] Update UI for window selection
 - [ ] Get rid of pesky QML binding loops
-- [ ] Implement frameless window
-- [ ] Add more window information
-- [ ] To think about this: https://stackoverflow.com/questions/33440966/setwindowshookex-is-injecting-32-bit-dll-into-64-bit-process-and-vice-versa
+- [ ] Improve implementation of frameless window
+- [ ] Save widow selecttion state
+- [ ] Improve Capture cursor (not always working now)
 
-- [x] Capture cursor
+- [x] Update UI for window selection
+- [x] Not recordnig alert
 - [x] Refactor usage of QThread
+
+## Notes to myself
+
+- Hooks are working, however they shouldn't, gonna think more about that.
+- To think about this: https://stackoverflow.com/questions/33440966/setwindowshookex-is-injecting-32-bit-dll-into-64-bit-process-and-vice-versa
+- Hooks not working for MinGW (bruh...)
+- Wintoast not working for MinGW
 
 ## Screenshot
 

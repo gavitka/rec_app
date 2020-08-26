@@ -82,7 +82,7 @@ bool CaptureWorker::CheckWindow()
 void CaptureWorker::Init()
 {
     m_updatetimer.setInterval(1000);
-    connect(&m_updatetimer, &QTimer::timeout, this, &CaptureWorker::update, Qt::DirectConnection);
+    connect(&m_updatetimer, &QTimer::timeout, this, &CaptureWorker::CheckWindow, Qt::DirectConnection);
 
     m_updatetimer.start();
     m_sleeptimer.start();
@@ -136,6 +136,7 @@ void CaptureWorker::Init()
     cctx->time_base = { 1, m_playFPS };
     cctx->max_b_frames = 2;
     cctx->gop_size = 12;
+
     if (videoStream->codecpar->codec_id == AV_CODEC_ID_H264) {
         av_opt_set(cctx, "preset", "ultrafast", 0);
     }
@@ -172,12 +173,7 @@ void CaptureWorker::Capture()
 
     if(!m_pause) {
         if(m_sleeptimer.elapsed() < (qint64)3000 || !BackEnd::getInstance()->sleepMode()) {
-            try {
-                CaptureFrame();
-            }
-            catch(std::runtime_error e) {
-                qDebug() << e.what();
-            }
+            CaptureFrame();
             checkSleeping(false);
         } else {
             checkSleeping(true);
@@ -226,83 +222,101 @@ void CaptureWorker::Finish()
 
 void CaptureWorker::CaptureFrame()
 {
-    QImage image;
-    if(m_backEnd->appManager()->isSelected()) {
-        if(!IsWindow(m_hwnd)) return;
-        image = ::captureWindow(m_hwnd);
-    } else {
-        image = ::captureScreen();
-    }
-
-    image = fixAspectRatio(image);
-
-    int err;
-    if (!videoFrame) {
-
-        videoFrame = av_frame_alloc();
-        videoFrame->format = AV_PIX_FMT_YUV420P;
-        videoFrame->width = cctx->width;
-        videoFrame->height = cctx->height;
-
-        if ((err = av_frame_get_buffer(videoFrame, 32)) < 0) {
-            throw std::runtime_error("Failed to allocate picture");
+    try {
+        QImage image;
+        if(m_backEnd->appManager()->isSelected()) {
+            if(!IsWindow(m_hwnd)) return;
+            image = ::captureWindow(m_hwnd);
+        } else {
+            image = ::captureScreen();
         }
-    }
 
-    bool reinitialize_context = false;
+        image = fixAspectRatio(image);
+        if(image.isNull() || !(image.width() > 0 && image.height() > 0)) {
+            return;
+        }
 
-    // If somebody resized window
-    if(image.width() != lastimagewidth || image.height() != lastimageheight){
-        reinitialize_context = true;
-        lastimagewidth = image.width();
-        lastimageheight = image.height();
-    }
+        int err;
+        if (!videoFrame) {
 
-    if (!swsCtx || reinitialize_context) {
-        swsCtx = sws_getContext(
-                    image.width(),
-                    image.height() - 0,
-                    AV_PIX_FMT_BGRA,
-                    cctx->width,
-                    cctx->height,
-                    AV_PIX_FMT_YUV420P,
-                    SWS_BICUBIC,
-                    nullptr,
-                    nullptr,
-                    nullptr
+            videoFrame = av_frame_alloc(); // free this
+            videoFrame->format = AV_PIX_FMT_YUV420P;
+            videoFrame->width = cctx->width;
+            videoFrame->height = cctx->height;
+
+            if ((err = av_frame_get_buffer(videoFrame, 32)) < 0) {
+                throw std::runtime_error("Failed to allocate picture");
+            }
+        }
+
+        bool reinitialize_context = false;
+
+        // If somebody resized window
+        if(image.width() != lastimagewidth || image.height() != lastimageheight){
+            reinitialize_context = true;
+            lastimagewidth = image.width();
+            lastimageheight = image.height();
+        }
+
+        if (!swsCtx || reinitialize_context) {
+            sws_freeContext(swsCtx);
+            swsCtx = sws_getContext(
+                        image.width(),
+                        image.height(),
+                        AV_PIX_FMT_BGRA,
+                        cctx->width,
+                        cctx->height,
+                        AV_PIX_FMT_YUV420P,
+                        SWS_BICUBIC,
+                        nullptr,
+                        nullptr,
+                        nullptr
+                        );
+        }
+
+        if(!swsCtx) {
+            qDebug() << "WHOOOOPS!";
+            qDebug() << "reinitialize_context" << reinitialize_context;
+            qDebug() << "swsCtx" << (void*)swsCtx;
+            qDebug() << "image.width()" << image.width();
+            qDebug() << "image.height()" << image.height();
+            qDebug() << "Ц Ц Ц Ц Ц";
+        }
+
+        int srcstride[1];
+        srcstride[0] = image.width() * 4;
+        const uchar* planes[1];
+        planes[0] = image.bits();
+        int res = sws_scale(
+                    swsCtx,
+                    planes,
+                    srcstride,
+                    0,
+                    image.height(),
+                    videoFrame->data,
+                    videoFrame->linesize
                     );
-    }
+        if(res == 0) throw std::runtime_error("Failed to swsScale");
 
-    int srcstride[1];
-    srcstride[0] = image.width() * 4;
-    const uchar* planes[1];
-    planes[0] = image.bits();
-    int res = sws_scale(
-            swsCtx,
-            planes,
-            srcstride,
-            0,
-            image.height() - 0,
-            videoFrame->data,
-            videoFrame->linesize
-            );
-    if(res == 0) throw std::runtime_error("Failed to swsScale");
+        videoFrame->pts = frameCounter++;
 
-    videoFrame->pts = frameCounter++;
+        if ((err = avcodec_send_frame(cctx, videoFrame)) < 0) {
+            throw std::runtime_error("Failed to send frame");
+        }
 
-    if ((err = avcodec_send_frame(cctx, videoFrame)) < 0) {
-        throw std::runtime_error("Failed to send frame");
-    }
+        AVPacket pkt;
+        av_init_packet(&pkt);
+        pkt.data = nullptr;
+        pkt.size = 0;
 
-    AVPacket pkt;
-    av_init_packet(&pkt);
-    pkt.data = nullptr;
-    pkt.size = 0;
-
-    if (avcodec_receive_packet(cctx, &pkt) == 0) {
-        pkt.flags |= AV_PKT_FLAG_KEY;
-        av_interleaved_write_frame(ofctx, &pkt);
-        av_packet_unref(&pkt);
+        if (avcodec_receive_packet(cctx, &pkt) == 0) {
+            pkt.flags |= AV_PKT_FLAG_KEY;
+            av_interleaved_write_frame(ofctx, &pkt);
+            av_packet_unref(&pkt);
+        }
+    } catch(std::runtime_error e) {
+        qDebug() << e.what();
+        return;
     }
 }
 
@@ -476,15 +490,10 @@ void CaptureWorker::setCrop(bool value)
     m_cropmode = value;
 }
 
+
 void CaptureWorker::setBitRate(int value)
 {
     m_bitRate = value;
-}
-
-
-void CaptureWorker::update()
-{
-    CheckWindow();
 }
 
 

@@ -21,7 +21,7 @@
 
 #include "applistmodel.h"
 #include "captureworker.h"
-//#include "lib/wintoastlib.h"
+#include "lib/wintoastlib.h"
 
 class CaptureWorker;
 
@@ -264,7 +264,7 @@ private:
     CaptureWorker* m_capture = nullptr;
     QThread m_thread;
 
-    //WinToastLib::WinToastTemplate m_templ;
+    WinToastLib::WinToastTemplate m_templ;
 
     States m_currentstate;
     AppManager *m_appmanager;
